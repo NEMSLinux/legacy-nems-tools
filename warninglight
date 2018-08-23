@@ -18,10 +18,11 @@
     return ($result);
   }
 
-  $hosts = query('hosts');
-  $services = query('services');
+//  $hosts = query('hosts');
+//  $services = query('services');
+//print_r($hosts);
+//print_r($services);
 
-print_r($hosts);
-print_r($services);
-
+$states = query('hosts?Columns=name,state');
+print_r($states);
 ?>
