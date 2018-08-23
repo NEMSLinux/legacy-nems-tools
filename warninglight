@@ -2,31 +2,24 @@
 <?php
   $nemsserver = '127.0.0.1';
 
-
-  $url = 'http://' . $nemsserver . '/nems-api/hosts';
-  $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL, $url);
-  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  if ($response = curl_exec($ch)) {
-    $hosts = json_decode($response);
-  } else {
-    echo 'Error: ' . curl_error($ch);
+  function query($query) {
+    global $nemsserver;
+    $url = 'http://' . $nemsserver . '/nems-api/' . $query;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    if ($response = curl_exec($ch)) {
+      $result = json_decode($response);
+    } else {
+      $result = json_encode(array('error'=>'invalid query or server not responding'));
+    }
+    curl_close($ch);
+    return ($result);
   }
-  curl_close($ch);
 
-  $url = 'http://' . $nemsserver . '/nems-api/services';
-  $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL, $url);
-  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  if ($response = curl_exec($ch)) {
-    $services = json_decode($response);
-  } else {
-    echo 'Error: ' . curl_error($ch);
-  }
-  curl_close($ch);
-
+  $hosts = query('hosts');
+  $services = query('services');
 
 print_r($hosts);
 print_r($services);
