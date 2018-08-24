@@ -1,5 +1,6 @@
 #!/usr/local/bin/php
 <?php
+$v=0;
   $conf = file('/root/nems/nems-tools/nems-tools.conf');
   if (is_array($conf) && (count($conf) > 0)) {
     foreach ($conf as $line) {
@@ -38,8 +39,13 @@ $definitions = new stdClass();
   $definitions->{2} = 'CRITICAL';
   $definitions->{3} = 'UNKNOWN';
 
+$currentstate = ''; // First run will never match the default state
+$apiresponse = 0; // 0 means API had no errors
 
-//$states = query('hosts?Columns=name,state');
+// Begin daemon loop
+while (1 == 1) {
+
+$issues = array(); // reset at each iteration
 $states = query('hosts?Columns=name,state,services_with_fullstate');
 foreach ($states->content as $key=>$host) {
   if (isset($host->services_with_fullstate)) {
@@ -66,62 +72,89 @@ if (isset($issues[2])) {
 } elseif (isset($issues[0])) {
   setstate('ok');
 } else {
-  die('Error finding state. Was API responding?' . PHP_EOL);
+  $apiresponse++;
+  if ($apiresponse == 5) {
+    echo '[' . date('Y-m-d g:i:sa') . '] nems-api is not responding.' . PHP_EOL;
+  }
+  if ($apiresponse == 10) { // set light to orange and leave it there.
+    echo '[' . date('Y-m-d g:i:sa') . '] nems-api is still not responding: I\'ll stop notifying.' . PHP_EOL;
+  }
 }
 
+  sleep(3); // refresh the data every 30 seconds
+} // end of daemon loop
 
 function setstate($state) {
-  global $issues;
+  global $issues,$currentstate,$currentissues,$v,$apiresponse;
+  $apiresponse = 0; // 0 means the API had no problems.
+  $previousstate = $currentstate;
+  $currentstate = $state;
+  $previousissues = $currentissues;
+  $currentissues = '';
+  // only update status if state has changed
+    switch ($state) {
 
-  switch ($state) {
+      case 'ok': // Green light.
+        if ($currentstate != $previousstate) $currentissueshead = 'NEMS State: OK.' . PHP_EOL;
+      break;
 
-    case 'ok': // Green light.
-      echo 'NEMS State: OK.' . PHP_EOL . PHP_EOL;
-    break;
-
-    case 'unknown': // Turn on orange light.
-      echo 'NEMS State: UNKNOWN.' . PHP_EOL . PHP_EOL;
-      foreach ($issues[3] as $issue) {
-        echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
-      }
-    break;
-
-    case 'warning': // Turn on orange, flash or pulse red.
-      echo 'NEMS State: WARNING.' . PHP_EOL . PHP_EOL;
-      foreach ($issues[2] as $issue) {
-        echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
-      }
-      if (isset($issues[3])) {
-        echo 'Other issues:' . PHP_EOL . PHP_EOL;
-        foreach ($issues[3] as $issue) {
-          echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+      case 'unknown': // Turn on orange light.
+        if ($currentstate != $previousstate) {
+          $currentissueshead = 'NEMS State: UNKNOWN.' . PHP_EOL;
+        } else {
+          $currentissueshead = 'Updated:' . PHP_EOL;
         }
-      }
-    break;
+        foreach ($issues[3] as $issue) {
+          $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+        }
+      break;
 
-    case 'critical': // Red solid light, siren for 3 seconds every 15 minutes.
-      echo 'NEMS State: CRITICAL.' . PHP_EOL . PHP_EOL;
-      foreach ($issues[2] as $issue) {
-        echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
-      }
-      if (isset($issues[1]) || isset($issues[3])) {
-        echo 'Other issues:' . PHP_EOL . PHP_EOL;
-        if (isset($issues[1])) { // warnings
-          foreach ($issues[1] as $issue) {
-            echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
-          }
-        }      
-        if (isset($issues[3])) { // unknown
+      case 'warning': // Turn on orange, flash or pulse red.
+        if ($currentstate != $previousstate) {
+          $currentissueshead = 'NEMS State: WARNING.' . PHP_EOL;
+        } else {
+          $currentissueshead = 'Updated:' . PHP_EOL;
+        }
+        foreach ($issues[2] as $issue) {
+          $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+        }
+        if (isset($issues[3])) {
+          $currentissues .= 'Other issues:' . PHP_EOL;
           foreach ($issues[3] as $issue) {
-            echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+            $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
           }
-        }      
-      }
-    break;
+        }
+      break;
 
-  }
+      case 'critical': // Red solid light, siren for 3 seconds every 15 minutes.
+        if ($currentstate != $previousstate) {
+          $currentissueshead = 'NEMS State: CRITICAL.' . PHP_EOL;
+        } else {
+          $currentissueshead = 'Updated:' . PHP_EOL;
+        }
+        foreach ($issues[2] as $issue) {
+          $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+        }
+        if (isset($issues[1]) || isset($issues[3])) {
+          $currentissues .= 'Other issues:' . PHP_EOL;
+          if (isset($issues[1])) { // warnings
+            foreach ($issues[1] as $issue) {
+              $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+            }
+          }      
+          if (isset($issues[3])) { // unknown
+            foreach ($issues[3] as $issue) {
+              $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+            }
+          }      
+        }
+      break;
+
+    }
+    if ($currentstate != $previousstate || $currentissues != $previousissues) {
+      echo '[' . date('Y-m-d g:i:sa') . '] ' . $currentissueshead . $currentissues;
+    }
   
 }
 
 ?>
-
