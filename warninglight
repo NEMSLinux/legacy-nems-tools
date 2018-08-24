@@ -5,12 +5,11 @@ $pid=getmypid();
 $user=trim(shell_exec('whoami'));
 if ($user != 'root') die('Access denied: Must be root.' . PHP_EOL);
 
+$isrunning = 0;
 if (file_exists('/var/run/warninglight.pid')) {
   $pidfromfile = file_get_contents('/var/run/warninglight.pid');
   if (file_exists( "/proc/$pidfromfile" )) {
     $isrunning = 1;
-  } else {
-    $isrunning = 0;
   }
 }
 
