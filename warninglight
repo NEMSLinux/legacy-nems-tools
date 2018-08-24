@@ -13,7 +13,9 @@ if (file_exists('/var/run/warninglight.pid')) {
   }
 }
 
-if ($isrunning == 1 && ($pid != $pidfromfile)) die('Already running.' . PHP_EOL);
+if ($isrunning == 1 && ($pid != $pidfromfile)) {
+  die('Already running.' . PHP_EOL . 'Run: tail -f /var/log/nems/nems-tools/warninglight' . PHP_EOL);
+}
 
 file_put_contents('/var/run/warninglight.pid',$pid);
 
