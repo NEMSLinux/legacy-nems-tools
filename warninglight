@@ -1,6 +1,25 @@
 #!/usr/local/bin/php
 <?php
 $v=0;
+$pid=getmypid();
+$user=trim(shell_exec('whoami'));
+if ($user != 'root') die('Access denied: Must be root.' . PHP_EOL);
+
+if (file_exists('/var/run/warninglight.pid')) {
+  $pidfromfile = file_get_contents('/var/run/warninglight.pid');
+  if (file_exists( "/proc/$pidfromfile" )) {
+    $isrunning = 1;
+  } else {
+    $isrunning = 0;
+  }
+}
+
+if ($isrunning == 1 && ($pid != $pidfromfile)) die('Already running.' . PHP_EOL);
+
+file_put_contents('/var/run/warninglight.pid',$pid);
+
+// Let's go!
+
   $conf = file('/root/nems/nems-tools/nems-tools.conf');
   if (is_array($conf) && (count($conf) > 0)) {
     foreach ($conf as $line) {
@@ -161,5 +180,8 @@ function setstate($state) {
     }
   
 }
+
+
+unlink('/var/run/warninglight.pid');
 
 ?>
