@@ -17,30 +17,15 @@ $v=0;
 
   if (!isset($nemsserver)) die('nemsserver missing from nems-tools.conf' . PHP_EOL);
 
-  function query($query) {
-    global $nemsserver;
-    $url = 'http://' . $nemsserver . '/nems-api/' . $query;
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    if ($response = curl_exec($ch)) {
-      $result = json_decode($response);
-    } else {
-      $result = json_encode(array('error'=>'invalid query or server not responding'));
-    }
-    curl_close($ch);
-    return ($result);
-  }
+
+$currentstate = ''; // First run will never match the default state
+$apiresponse = 0; // 0 means API had no errors
 
 $definitions = new stdClass();
   $definitions->{0} = 'OK';
   $definitions->{1} = 'WARNING';
   $definitions->{2} = 'CRITICAL';
   $definitions->{3} = 'UNKNOWN';
-
-$currentstate = ''; // First run will never match the default state
-$apiresponse = 0; // 0 means API had no errors
 
 // Begin daemon loop
 while (1 == 1) {
@@ -83,6 +68,26 @@ if (isset($issues[2])) {
 
   sleep(3); // refresh the data every 30 seconds
 } // end of daemon loop
+
+
+
+// Functions
+
+  function query($query) {
+    global $nemsserver;
+    $url = 'http://' . $nemsserver . '/nems-api/' . $query;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    if ($response = curl_exec($ch)) {
+      $result = json_decode($response);
+    } else {
+      $result = json_encode(array('error'=>'invalid query or server not responding'));
+    }
+    curl_close($ch);
+    return ($result);
+  }
 
 function setstate($state) {
   global $issues,$currentstate,$currentissues,$v,$apiresponse;
