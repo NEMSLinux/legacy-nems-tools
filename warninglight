@@ -24,5 +24,15 @@
 //print_r($services);
 
 $states = query('hosts?Columns=name,state');
+/*
+  0 = OK
+  1 = WARNING
+  2 = CRITICAL
+  3 = UNKNOWN
+*/
+
 print_r($states);
+
+
 ?>
+
