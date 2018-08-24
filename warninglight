@@ -1,6 +1,20 @@
 #!/usr/local/bin/php
 <?php
-  $nemsserver = '127.0.0.1';
+  $conf = file('/root/nems/nems-tools/nems-tools.conf');
+  if (is_array($conf) && (count($conf) > 0)) {
+    foreach ($conf as $line) {
+      $tmp = explode('=',$line);
+      if (is_array($tmp) && (count($tmp) == 2)) {
+        $stringname = $tmp[0];
+        // Eg. nemsserver=127.0.0.1 in nems-tools.conf will give $nemsserver here.
+        $$stringname = trim($tmp[1]);
+      }
+    }
+  } else {
+    die('Could not load nems-tools.conf.' . PHP_EOL);
+  }
+
+  if (!isset($nemsserver)) die('nemsserver missing from nems-tools.conf' . PHP_EOL);
 
   function query($query) {
     global $nemsserver;
@@ -18,21 +32,98 @@
     return ($result);
   }
 
-//  $hosts = query('hosts');
-//  $services = query('services');
-//print_r($hosts);
-//print_r($services);
+$definitions = new stdClass();
+  $definitions->{0} = 'OK';
+  $definitions->{1} = 'WARNING';
+  $definitions->{2} = 'CRITICAL';
+  $definitions->{3} = 'UNKNOWN';
 
-$states = query('hosts?Columns=name,state');
-/*
-  0 = OK
-  1 = WARNING
-  2 = CRITICAL
-  3 = UNKNOWN
-*/
 
-print_r($states);
+//$states = query('hosts?Columns=name,state');
+$states = query('hosts?Columns=name,state,services_with_fullstate');
+foreach ($states->content as $key=>$host) {
+  if (isset($host->services_with_fullstate)) {
+    if ($host->state > 0) {
+      foreach ($host->services_with_fullstate as $services) {
+        if (is_array($services) && isset($services[1])) {
+          if ($services[1] > 0) $issues[$services[1]][] = array(
+            'service'=>$services[0],
+            'host'=>$host->name,
+            'error'=>$services[3]
+          );
+        }
+      }
+    }
+  }
+}
 
+// Only allow one state, and always default to the worst.
+// Eg., if critical and warning set, we'll go with critical.
+if (isset($issues[2])) {
+  setstate('critical');
+} elseif (isset($issues[1])) {
+  setstate('warning');
+} elseif (isset($issues[3])) {
+  setstate('unknown');
+} elseif (isset($issues[0])) {
+  setstate('ok');
+} else {
+  die('Error finding state. Was API responding?' . PHP_EOL);
+}
+
+
+function setstate($state) {
+  global $issues;
+
+  switch ($state) {
+
+    case 'ok': // Green light.
+      echo 'NEMS State: OK.' . PHP_EOL . PHP_EOL;
+    break;
+
+    case 'unknown': // Turn on orange light.
+      echo 'NEMS State: UNKNOWN.' . PHP_EOL . PHP_EOL;
+      foreach ($issues[3] as $issue) {
+        echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+      }
+    break;
+
+    case 'warning': // Turn on orange, flash or pulse red.
+      echo 'NEMS State: WARNING.' . PHP_EOL . PHP_EOL;
+      foreach ($issues[2] as $issue) {
+        echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+      }
+      if (isset($issues[3])) {
+        echo 'Other issues:' . PHP_EOL . PHP_EOL;
+        foreach ($issues[3] as $issue) {
+          echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+        }
+      }
+    break;
+
+    case 'critical': // Red solid light, siren for 3 seconds every 15 minutes.
+      echo 'NEMS State: CRITICAL.' . PHP_EOL . PHP_EOL;
+      foreach ($issues[2] as $issue) {
+        echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+      }
+      if (isset($issues[1]) || isset($issues[3])) {
+        echo 'Other issues:' . PHP_EOL . PHP_EOL;
+        if (isset($issues[1])) { // warnings
+          foreach ($issues[1] as $issue) {
+            echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+          }
+        }      
+        if (isset($issues[3])) { // unknown
+          foreach ($issues[3] as $issue) {
+            echo '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL . PHP_EOL;
+          }
+        }      
+      }
+    break;
+
+  }
+  
+}
 
 ?>
 
