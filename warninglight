@@ -129,7 +129,7 @@ function setstate($state) {
         } else {
           $currentissueshead = 'Updated:' . PHP_EOL;
         }
-        foreach ($issues[3] as $issue) {
+        if (isset($issues[3])) foreach ($issues[3] as $issue) {
           $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
         }
       break;
@@ -140,7 +140,7 @@ function setstate($state) {
         } else {
           $currentissueshead = 'Updated:' . PHP_EOL;
         }
-        foreach ($issues[2] as $issue) {
+        if (isset($issues[1])) foreach ($issues[1] as $issue) {
           $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
         }
         if (isset($issues[3])) {
@@ -157,7 +157,7 @@ function setstate($state) {
         } else {
           $currentissueshead = 'Updated:' . PHP_EOL;
         }
-        foreach ($issues[2] as $issue) {
+        if (isset($issues[2])) foreach ($issues[2] as $issue) {
           $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
         }
         if (isset($issues[1]) || isset($issues[3])) {
