@@ -79,14 +79,14 @@ if (isset($issues[2])) {
 } else {
   $apiresponse++;
   if ($apiresponse == 5) {
-    echo '[' . date('Y-m-d g:i:sa') . '] nems-api is not responding.' . PHP_EOL;
+    echo '[' . date('Y-m-d g:i:sa') . '] nems-api is not responding or Nagios offline.' . PHP_EOL;
   }
   if ($apiresponse == 10) { // set light to orange and leave it there.
     echo '[' . date('Y-m-d g:i:sa') . '] nems-api is still not responding: I\'ll stop notifying.' . PHP_EOL;
   }
 }
 
-  sleep(3); // refresh the data every 30 seconds
+  sleep(30); // refresh the data every 30 seconds
 } // end of daemon loop
 
 
