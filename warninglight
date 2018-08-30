@@ -5,6 +5,8 @@ $pid=getmypid();
 $user=trim(shell_exec('whoami'));
 if ($user != 'root') die('Access denied: Must be root.' . PHP_EOL);
 
+$platform = shell_exec('/usr/local/bin/nems-info platform');
+
 $isrunning = 0;
 if (file_exists('/var/run/warninglight.pid')) {
   $pidfromfile = file_get_contents('/var/run/warninglight.pid');
@@ -112,12 +114,22 @@ if (isset($issues[2])) {
   }
 
 function setstate($state) {
-  global $issues,$currentstate,$currentissues,$v,$apiresponse;
+  global $issues,$currentstate,$currentissues,$v,$apiresponse,$platform;
   $apiresponse = 0; // 0 means the API had no problems.
   $previousstate = $currentstate;
   $currentstate = $state;
   $previousissues = $currentissues;
   $currentissues = '';
+
+  // Setup which GPIO we're using
+  $GPIO = new stdClass();
+  if ($platform >= 0 || $platfrom <= 9) {
+    // Raspberry Pi
+    $GPIO->exec = '';
+    $GPIO->pins = array('ok'=>18,'unknown'=>18,'warning'=>18,'critical'=>18,'siren'=>18);
+    $GPIO->command = '';
+  }
+
   // only update status if state has changed
     switch ($state) {
 
