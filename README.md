@@ -1,2 +1,6 @@
 # nems-tools
 Tool repository for NEMS - The Nagios Enterprise Monitoring Server for Raspberry Pi
+
+```
+apt update && apt -y install git && mkdir /root/nems && cd /root/nems && git clone https://github.com/Cat5TV/nems-tools
+```
