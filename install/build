@@ -1,0 +1,14 @@
+#!/bin/bash
+if [[ -d /usr/local/share/nems ]]; then
+  echo "This cannot be installed on a NEMS Linux server."
+  exit
+fi
+
+apt update
+apt -y install php7.0 apache2 && rm -rf /var/www/html && ln -s /root/nems/nems-tools/nems-tools/www /var/www/html
+
+cd /root/nems/
+git clone git://git.drogon.net/wiringPi
+
+cd wiringPi
+./build
