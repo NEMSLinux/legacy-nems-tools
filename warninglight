@@ -57,6 +57,9 @@ file_put_contents('/var/run/warninglight.pid',$pid);
     foreach ($GPIO->pins as $status => $pin) {
       shell_exec('/usr/local/bin/gpio -g mode ' . $pin . ' output');
     }
+    // Clear light state (turn off all lights)
+    lightOn('none',5000000);
+
     // Initialization animation
     for ($q = 0; $q < 6; $q++) {
       lightOn('ok',200000); lightOn('none',400000);
@@ -129,9 +132,11 @@ if (isset($issues[2])) {
   $apiresponse++;
   if ($apiresponse == 5) {
     echo '[' . date('Y-m-d g:i:sa') . '] nems-api is not responding or Nagios offline.' . PHP_EOL;
+    lightOn('critical');
   }
   if ($apiresponse == 10) { // set light to orange and leave it there.
     echo '[' . date('Y-m-d g:i:sa') . '] nems-api is still not responding: I\'ll stop notifying.' . PHP_EOL;
+    lightOn('none');
   }
 }
   sleep(30); // refresh the data every 30 seconds
