@@ -5,7 +5,11 @@ $pid=getmypid();
 $user=trim(shell_exec('whoami'));
 if ($user != 'root') die('Access denied: Must be root.' . PHP_EOL);
 
-$platform = shell_exec('/usr/local/bin/nems-info platform');
+if (file_exists('/usr/local/bin/nems-info')) {
+  $platform = shell_exec('/usr/local/bin/nems-info platform');
+} else {
+  $platform = 0;
+}
 
 $isrunning = 0;
 if (file_exists('/var/run/warninglight.pid')) {
@@ -23,7 +27,12 @@ file_put_contents('/var/run/warninglight.pid',$pid);
 
 // Let's go!
 
-  $conf = file('/root/nems/nems-tools/nems-tools.conf');
+  if (file_exists('/etc/nems/nems-tools.conf')) {
+    $conf = file('/etc/nems/nems-tools.conf');
+  } else {
+    $conf = file('/root/nems/nems-tools/nems-tools.conf'); // Default... localhost
+  }
+
   if (is_array($conf) && (count($conf) > 0)) {
     foreach ($conf as $line) {
       $tmp = explode('=',$line);
@@ -39,6 +48,42 @@ file_put_contents('/var/run/warninglight.pid',$pid);
 
   if (!isset($nemsserver)) die('nemsserver missing from nems-tools.conf' . PHP_EOL);
 
+// Setup GPIO
+  echo '[' . date('Y-m-d g:i:sa') . '] Initializing warninglight... ';
+  $GPIO = new stdClass();
+  if ($platform >= 0 || $platfrom <= 9) {
+    // Raspberry Pi
+    $GPIO->pins = array('ok'=>24,'unknown'=>23,'warning'=>23,'critical'=>18,'siren'=>18);
+    foreach ($GPIO->pins as $status => $pin) {
+      shell_exec('/usr/local/bin/gpio -g mode ' . $pin . ' output');
+    }
+    // Initialization animation
+    for ($q = 0; $q < 6; $q++) {
+      lightOn('ok',200000); lightOn('none',400000);
+    }
+    for ($i = 0 ; $i < 2; $i++) {
+      for ($k = 0 ; $k < 2; $k++) {
+        lightOn('ok'); lightOn('warning'); lightOn('critical'); lightOn('warning');
+      }
+    }
+    for ($i = 0; $i < 2; $i++) {
+      lightOn('all',400000); lightOn('none',800000);
+    }
+    for ($i = 0; $i < 15; $i++) {
+      lightOn('unknown',500); lightOn('none',500); lightOn('critical',500); lightOn('none',500);
+    }
+    for ($i = 0; $i < 15; $i++) {
+      lightOn('unknown',250); lightOn('none',250); lightOn('critical',250); lightOn('none',250); lightOn('ok',250); lightOn('none',250);
+    }
+    // Final light state is "unknown" - which will be replaced as soon as it is known
+    lightOn('unknown',1000);
+    echo 'Done.';
+  } else {
+    echo 'Daemon loaded, but NEMS Toolbox is not compatible with this SBC.';
+  }
+  echo PHP_EOL;
+
+echo '[' . date('Y-m-d g:i:sa') . '] Connecting to NEMS Linux to obtain current state.' . PHP_EOL;
 
 $currentstate = ''; // First run will never match the default state
 $apiresponse = 0; // 0 means API had no errors
@@ -89,7 +134,6 @@ if (isset($issues[2])) {
     echo '[' . date('Y-m-d g:i:sa') . '] nems-api is still not responding: I\'ll stop notifying.' . PHP_EOL;
   }
 }
-
   sleep(30); // refresh the data every 30 seconds
 } // end of daemon loop
 
@@ -121,14 +165,8 @@ function setstate($state) {
   $previousissues = $currentissues;
   $currentissues = '';
 
-  // Setup which GPIO we're using
-  $GPIO = new stdClass();
-  if ($platform >= 0 || $platfrom <= 9) {
-    // Raspberry Pi
-    $GPIO->exec = '';
-    $GPIO->pins = array('ok'=>18,'unknown'=>18,'warning'=>18,'critical'=>18,'siren'=>18);
-    $GPIO->command = '';
-  }
+  // Activate appropriate light
+    lightOn($state);
 
   // only update status if state has changed
     switch ($state) {
@@ -196,6 +234,19 @@ function setstate($state) {
   
 }
 
+function lightOn($thisstatus,$delay=100000) {
+  global $GPIO;
+  $chosenpin = '';
+  foreach ($GPIO->pins as $status=>$pin) {
+    if ($status == $thisstatus || $thisstatus == 'all') {
+      shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' 1');
+      $chosenpin = $pin;
+    } elseif ($pin != $chosenpin) {
+      shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' 0');
+    }
+  }
+  usleep($delay);
+}
 
 unlink('/var/run/warninglight.pid');
 

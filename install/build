@@ -4,8 +4,18 @@ if [[ -d /usr/local/share/nems ]]; then
   exit
 fi
 
+git config --global user.email "nems@category5.tv"
+git config --global user.name "NEMS Tools"
+
+ # Make a symlink to the PHP interpreter if it doesn't exist in /usr/local/bin
+ if [[ ! -e /usr/local/bin/php ]]; then
+  if [[ -e /usr/bin/php ]]; then
+   ln -s /usr/bin/php /usr/local/bin/php
+  fi
+ fi
+
 apt update
-apt -y install php7.0 apache2 && rm -rf /var/www/html && ln -s /root/nems/nems-tools/nems-tools/www /var/www/html
+apt -y install php7.0 apache2 libapache2-mod-php php-curl && rm -rf /var/www/html && ln -s /root/nems/nems-tools/nems-tools/www /var/www/html
 
 cd /root/nems/
 git clone git://git.drogon.net/wiringPi
