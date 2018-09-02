@@ -1,8 +1,17 @@
 #!/bin/bash
-if [[ -d /usr/local/share/nems ]]; then
-  echo "This cannot be installed on a NEMS Linux server."
-  exit
-fi
+
+if (file_exists('/usr/local/bin/nems-info')) {
+  $platform = shell_exec('/usr/local/bin/nems-info platform');
+} else {
+  $platform = 0; // Assume this is a raw Pi distro
+}
+
+apt update
+apt -y install php7.0 apache2 libapache2-mod-php php-curl
+
+# Activate /nems-tools Apache conf
+ln -s /root/nems/nems-tools/install/apache2.conf /etc/apache2/conf-available/nems-tools.conf
+a2enconf nems-tools
 
 git config --global user.email "nems@category5.tv"
 git config --global user.name "NEMS Tools"
@@ -14,11 +23,40 @@ git config --global user.name "NEMS Tools"
   fi
  fi
 
-apt update
-apt -y install php7.0 apache2 libapache2-mod-php php-curl && rm -rf /var/www/html && ln -s /root/nems/nems-tools/nems-tools/www /var/www/html
+# Only setup GPIO connections on Raspberry Pi
+if ($platform >= 0 || $platfrom <= 9) {
+  cd /root/nems/
+  git clone git://git.drogon.net/wiringPi
+  cd wiringPi
+  ./build
+fi
 
-cd /root/nems/
-git clone git://git.drogon.net/wiringPi
 
-cd wiringPi
-./build
+# Add new cron entries
+
+  # Dump current crontab to tmp file
+  crontab -l > /tmp/cron.tmp
+
+  if ! grep -q "NEMS0012" /tmp/cron.tmp; then
+    if [[ ! -d /var/log/nems/nems-tools/ ]]; then
+      mkdir -p /var/log/nems/nems-tools/
+    fi
+    printf "\n# nems-tools warninglight NEMS0012\n@reboot /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1\n" >> /tmp/cron.tmp
+    cronupdate=1
+    # Run it now
+    /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1 &
+  fi
+
+  # Import revised crontab
+  if [[ "$cronupdate" == "1" ]]
+  then
+    crontab /tmp/cron.tmp
+  fi
+
+  # Remove temp file
+  rm /tmp/cron.tmp
+
+# /Add new cron entries
+
+# Reload apache2
+systemctl reload apache2
