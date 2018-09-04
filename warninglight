@@ -51,38 +51,48 @@ file_put_contents('/var/run/warninglight.pid',$pid);
 // Setup GPIO
   echo '[' . date('Y-m-d g:i:sa') . '] Initializing warninglight... ';
   $GPIO = new stdClass();
+  if (file_exists('/usr/local/bin/gpio')) {
+    $hardware=1;
+  } else {
+    $hardware=0;
+  }
   if ($platform >= 0 || $platfrom <= 9) {
     // Raspberry Pi
-    $GPIO->pins = array('ok'=>24,'unknown'=>23,'warning'=>23,'critical'=>18,'siren'=>18);
-    foreach ($GPIO->pins as $status => $pin) {
-      shell_exec('/usr/local/bin/gpio -g mode ' . $pin . ' output');
-    }
-    // Clear light state (turn off all lights)
-    lightOn('none',5000000);
-
-    // Initialization animation
-    for ($q = 0; $q < 6; $q++) {
-      lightOn('ok',200000); lightOn('none',400000);
-    }
-    for ($i = 0 ; $i < 2; $i++) {
-      for ($k = 0 ; $k < 2; $k++) {
-        lightOn('ok'); lightOn('warning'); lightOn('critical'); lightOn('warning');
+    if ($hardware == 1) {
+      $GPIO->pins = array('ok'=>24,'unknown'=>23,'warning'=>23,'critical'=>18,'siren'=>18);
+      foreach ($GPIO->pins as $status => $pin) {
+        shell_exec('/usr/local/bin/gpio -g mode ' . $pin . ' output');
       }
+      // Clear light state (turn off all lights)
+      lightOn('none',5000000);
+
+      // Initialization animation
+      for ($q = 0; $q < 6; $q++) {
+        lightOn('ok',200000); lightOn('none',400000);
+      }
+      for ($i = 0 ; $i < 2; $i++) {
+        for ($k = 0 ; $k < 2; $k++) {
+          lightOn('ok'); lightOn('warning'); lightOn('critical'); lightOn('warning');
+        }
+      }
+      for ($i = 0; $i < 2; $i++) {
+        lightOn('all',400000); lightOn('none',800000);
+      }
+      for ($i = 0; $i < 15; $i++) {
+        lightOn('unknown',500); lightOn('none',500); lightOn('critical',500); lightOn('none',500);
+      }
+      for ($i = 0; $i < 15; $i++) {
+        lightOn('unknown',250); lightOn('none',250); lightOn('critical',250); lightOn('none',250); lightOn('ok',250); lightOn('none',250);
+      }
+      // Final light state is "unknown" - which will be replaced as soon as it is known
+      lightOn('unknown',1000);
+      echo 'Done.';
+    } else {
+      echo 'Cannot initialize hardware.';
     }
-    for ($i = 0; $i < 2; $i++) {
-      lightOn('all',400000); lightOn('none',800000);
-    }
-    for ($i = 0; $i < 15; $i++) {
-      lightOn('unknown',500); lightOn('none',500); lightOn('critical',500); lightOn('none',500);
-    }
-    for ($i = 0; $i < 15; $i++) {
-      lightOn('unknown',250); lightOn('none',250); lightOn('critical',250); lightOn('none',250); lightOn('ok',250); lightOn('none',250);
-    }
-    // Final light state is "unknown" - which will be replaced as soon as it is known
-    lightOn('unknown',1000);
-    echo 'Done.';
   } else {
-    echo 'Daemon loaded, but NEMS Toolbox is not compatible with this SBC.';
+    echo 'Daemon loaded, but hardware is not compatible with this SBC.' . PHP_EOL;
+    echo 'Will act as server.';
   }
   echo PHP_EOL;
 
@@ -240,7 +250,8 @@ function setstate($state) {
 }
 
 function lightOn($thisstatus,$delay=100000) {
-  global $GPIO;
+  global $GPIO,$hardware;
+  if ($hardware==0) break;
   $chosenpin = '';
   foreach ($GPIO->pins as $status=>$pin) {
     if ($status == $thisstatus || $thisstatus == 'all') {
