@@ -251,7 +251,7 @@ function setstate($state) {
 
 function lightOn($thisstatus,$delay=100000) {
   global $GPIO,$hardware;
-  if ($hardware==0) break;
+  if ($hardware==0) return;
   $chosenpin = '';
   foreach ($GPIO->pins as $status=>$pin) {
     if ($status == $thisstatus || $thisstatus == 'all') {
