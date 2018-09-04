@@ -88,7 +88,7 @@ file_put_contents('/var/run/warninglight.pid',$pid);
       lightOn('unknown',1000);
       echo 'Done.';
     } else {
-      echo 'Cannot initialize hardware.';
+      echo 'Cannot initialize hardware (only supported on Pi).';
     }
   } else {
     echo 'Daemon loaded, but hardware is not compatible with this SBC.' . PHP_EOL;
