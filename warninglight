@@ -112,7 +112,7 @@ while (1 == 1) {
 
 $issues = array(); // reset at each iteration
 $states = query('hosts?Columns=name,state,services_with_fullstate');
-if (is_object($states) && count($states) > 0) {
+if (is_object($states) && count((array)$states) > 0) {
   foreach ($states->content as $key=>$host) {
     if (isset($host->services_with_fullstate)) {
       foreach ($host->services_with_fullstate as $services) {
