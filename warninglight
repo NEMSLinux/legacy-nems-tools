@@ -188,6 +188,11 @@ function setstate($state) {
 
       case 'ok': // Green light.
         if ($currentstate != $previousstate) $currentissueshead = 'NEMS State: OK.' . PHP_EOL;
+        $fieldsarray[] = array(
+          'name' => 'Everything is okay',
+          'value' => 'No known issues',
+          'inline' => false
+        );
       break;
 
       case 'unknown': // Turn on orange light.
@@ -198,6 +203,11 @@ function setstate($state) {
         }
         if (isset($issues[3])) foreach ($issues[3] as $issue) {
           $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+          $fieldsarray[] = array(
+            'name' => $issue['service'] . ' on ' . $issue['host'],
+            'value' => $issue['error'],
+            'inline' => true
+          );
         }
       break;
 
@@ -209,11 +219,21 @@ function setstate($state) {
         }
         if (isset($issues[1])) foreach ($issues[1] as $issue) {
           $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+          $fieldsarray[] = array(
+            'name' => $issue['service'] . ' on ' . $issue['host'],
+            'value' => $issue['error'],
+            'inline' => true
+          );
         }
         if (isset($issues[3])) {
           $currentissues .= 'Other issues:' . PHP_EOL;
           foreach ($issues[3] as $issue) {
             $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+            $fieldsarray[] = array(
+              'name' => $issue['service'] . ' on ' . $issue['host'],
+              'value' => $issue['error'],
+              'inline' => true
+            );
           }
         }
       break;
@@ -226,17 +246,32 @@ function setstate($state) {
         }
         if (isset($issues[2])) foreach ($issues[2] as $issue) {
           $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+          $fieldsarray[] = array(
+            'name' => $issue['service'] . ' on ' . $issue['host'],
+            'value' => $issue['error'],
+            'inline' => true
+          );
         }
         if (isset($issues[1]) || isset($issues[3])) {
           $currentissues .= 'Other issues:' . PHP_EOL;
           if (isset($issues[1])) { // warnings
             foreach ($issues[1] as $issue) {
               $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+              $fieldsarray[] = array(
+                'name' => $issue['service'] . ' on ' . $issue['host'],
+                'value' => $issue['error'],
+                'inline' => true
+              );
             }
           }      
           if (isset($issues[3])) { // unknown
             foreach ($issues[3] as $issue) {
               $currentissues .= '  - Service "' . $issue['service'] . '" on ' . $issue['host'] . ':' . PHP_EOL . '    ' . $issue['error'] . PHP_EOL;
+              $fieldsarray[] = array(
+                'name' => $issue['service'] . ' on ' . $issue['host'],
+                'value' => $issue['error'],
+                'inline' => true
+              );
             }
           }      
         }
@@ -245,6 +280,7 @@ function setstate($state) {
     }
     if ($currentstate != $previousstate || $currentissues != $previousissues) {
       echo '[' . date('Y-m-d g:i:sa') . '] ' . $currentissueshead . $currentissues;
+      include('/root/nems/nems-tools/webhook');
     }
   
 }
