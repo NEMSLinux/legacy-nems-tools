@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Get your piWatcher hat at https://cat5.tv/piwatcher
+
+# piWatcher works by listening for its program to be called.
+# If the hat doesn't receive a query within 30 seconds, power
+# is cut to the Pi.
+# This script ensures a query is sent every 10 seconds, and the Pi
+# is powered back on after 15 seconds of power off.
+# This way, if the Pi locks up (stops pinging every 10 seconds)
+# the device will be automatically restarted.
+
+platform=$(/usr/local/bin/nems-info platform)
+
+if [[ $platform < 10 ]]; then
+
+  # Check if a piWatcher is installed
+  piwatcher=$(/usr/local/bin/piwatcher status 2>&1)
+  if [[ $piwatcher == *"ERR"* ]]; then
+    echo "No piWatcher board detected. Get yours at https://cat5.tv/piwatcher"
+    exit
+  fi
+
+  # Set piWatcher to power on the NEMS Server after 15 seconds of power off
+  /usr/local/bin/piwatcher wake 15
+
+  # Prevent piWatcher from shutting down the NEMS server
+  while true
+  do
+    /usr/local/bin/piwatcher status
+    sleep 10
+  done
+
+fi
