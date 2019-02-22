@@ -17,9 +17,12 @@ if [[ $platform < 10 ]]; then
   # Check if a piWatcher is installed
   piwatcher=$(/usr/local/bin/piwatcher status 2>&1)
   if [[ $piwatcher == *"ERR"* ]]; then
+    echo 0 > /var/log/nems/piwatcher
     echo "No piWatcher board detected. Get yours at https://cat5.tv/piwatcher"
     exit
   fi
+
+  echo 1 > /var/log/nems/piwatcher
 
   # Set piWatcher to power on the NEMS Server after 15 seconds of power off
   /usr/local/bin/piwatcher wake 15
