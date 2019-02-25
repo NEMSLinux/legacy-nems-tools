@@ -9,7 +9,12 @@
 # the Pi is powered back on after 15 seconds of power off.
 # This way, if the Pi locks up, it will be automatically restarted.
 
+# For those interested, here's how I compile and install piWatcher:
+# https://github.com/Cat5TV/nems-admin/blob/master/build/160-rpi-piwatcher
+
 platform=$(/usr/local/bin/nems-info platform)
+# If you're not using NEMS Linux but still want to use my script, comment the command above and uncomment this:
+#platform=1
 
 if [[ $platform < 10 ]]; then
 
