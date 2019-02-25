@@ -18,6 +18,11 @@ platform=$(/usr/local/bin/nems-info platform)
 
 if [[ $platform < 10 ]]; then
 
+  # Just in case user is not on NEMS, create a log folder
+  if [[ ! -d /var/log/nems ]]; then
+    mkdir /var/log/nems
+  fi
+
   # Check if a piWatcher is installed
   piwatcher=$(/usr/local/bin/piwatcher status 2>&1)
   if [[ $piwatcher == *"ERR"* ]]; then
