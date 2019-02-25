@@ -16,6 +16,19 @@ platform=$(/usr/local/bin/nems-info platform)
 # If you're not using NEMS Linux but still want to use my script, comment the command above and uncomment this:
 #platform=1
 
+# Check if a PID exists. If yes, check if it is running and abort if yes.
+if [[ -e /var/run/nems-piwatcher.pid ]]; then
+  running=$(cat /var/run/nems-piwatcher.pid)
+  if ps -p $running > /dev/null
+    then
+      echo "Already running"
+      exit
+    fi
+fi
+
+# Store the PID (so you can more easily kill the process)
+echo $$ > /var/run/nems-piwatcher.pid
+
 if [[ $platform < 10 ]]; then
 
   # Just in case user is not on NEMS, create a log folder
@@ -48,3 +61,5 @@ if [[ $platform < 10 ]]; then
   done
 
 fi
+
+rm /var/run/nems-piwatcher.pid
