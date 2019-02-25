@@ -24,14 +24,18 @@ if [[ $platform < 10 ]]; then
 
   echo 1 > /var/log/nems/piwatcher
 
-  # Set piWatcher to power on the NEMS Server after 15 seconds of power off
+  # Tell the piWatcher to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
+  /usr/local/bin/piwatcher watch 120
+
+  # Set piWatcher to re-power the NEMS Server after 15 seconds of power off
   /usr/local/bin/piwatcher wake 15
 
   # Prevent piWatcher from shutting down the NEMS server
   while true
   do
+    # Send heartbeat to piWatcher every 45 seconds, resetting the 2 minute countdown
     /usr/local/bin/piwatcher status
-    sleep 10
+    sleep 45
   done
 
 fi
