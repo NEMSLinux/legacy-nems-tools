@@ -29,7 +29,7 @@ fi
 # Store the PID (so you can more easily kill the process)
 echo $$ > /var/run/nems-piwatcher.pid
 
-if [[ $platform < 10 ]]; then
+if (( $platform < '10' )); then
 
   # Just in case user is not on NEMS, create a log folder
   if [[ ! -d /var/log/nems ]]; then
