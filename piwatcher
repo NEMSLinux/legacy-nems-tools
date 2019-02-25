@@ -3,12 +3,11 @@
 # Get your piWatcher hat at https://cat5.tv/piwatcher
 
 # piWatcher works by listening for its program to be called.
-# If the hat doesn't receive a query within 30 seconds, power
-# is cut to the Pi.
-# This script ensures a query is sent every 10 seconds, and the Pi
-# is powered back on after 15 seconds of power off.
-# This way, if the Pi locks up (stops pinging every 10 seconds)
-# the device will be automatically restarted.
+# If the hat doesn't receive a heartbeat within 2 minutes,
+# power is cut to the Pi.
+# This script ensures a heartbeat is sent every 45 seconds, and
+# the Pi is powered back on after 15 seconds of power off.
+# This way, if the Pi locks up, it will be automatically restarted.
 
 platform=$(/usr/local/bin/nems-info platform)
 
