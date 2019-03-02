@@ -280,6 +280,8 @@ function setstate($state) {
     }
     if ($currentstate != $previousstate || $currentissues != $previousissues) {
       echo '[' . date('Y-m-d g:i:sa') . '] ' . $currentissueshead . $currentissues;
+      // clobber the currentstate file
+      file_put_contents('/var/log/nems/nems-tools/currentstate','[' . date('Y-m-d g:i:sa') . '] ' . $currentissueshead . $currentissues);
       include('/root/nems/nems-tools/webhook');
     }
   
