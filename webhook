@@ -5,7 +5,6 @@
 $webhook = trim(shell_exec('/usr/local/bin/nems-info webhook'));
 
 // currentissueshead set means 1) this was called by warninglight and 2) something has changed
-
 if (isset($currentissueshead) && strlen($webhook) > 0) {
 
 $alias = trim(shell_exec('/usr/local/bin/nems-info alias'));
@@ -69,26 +68,83 @@ foreach ($fieldsarray as $input) {
 
 // Create the webhook object
 $hookObject = new stdClass();
-$hookObject->content = strtoupper($state);
-$hookObject->username = 'NEMS ' . strtoupper($state);
-$hookObject->avatar_url = $light_cdn . $color . '.png';
-$hookObject->tts = false;
 
-$hookObject->embeds = array();
-$hookObject->embeds[0] = array();
-$hookObject->embeds[0]['title'] = $currentissueshead;
-$hookObject->embeds[0]['type'] = 'rich';
-$hookObject->embeds[0]['description'] = '';
-$hookObject->embeds[0]['timestamp'] = date('c');
-$hookObject->embeds[0]['color'] = hexdec('FFFFFF');
+if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.microsoft.com/en-us/outlook/actionable-messages/send-via-connectors
+  $nemsstate = trim('NEMS ' . $currentissueshead);
+  $hookObject->{@schema} = 'https://adaptivecards.io/schemas/adaptive-card.json';
+  $hookObject->type = 'AdaptiveCard';
+  $hookObject->version = '1.0';
 
-$hookObject->embeds[0]['author'] = new stdClass();
-$hookObject->embeds[0]['author']->name = 'Reporting Server: ' . $alias;
+  // For now, have to do plain text since Adaptive Cards don't work in MS Teams [yet] - see https://stackoverflow.com/questions/50753072/microsoft-teams-webhook-generating-400-for-adaptive-card#comment93907448_50753413
+  $hookObject->text = "**$nemsstate**\n\n$currentissueshead\n\n**Reporting Server:** $alias\n\n**Timestamp:** " . date('c') . "\n\nPowered by NEMS Linux $nemsver";
 
-$hookObject->embeds[0]['footer'] = new stdClass();
-$hookObject->embeds[0]['footer']->text = 'Powered by NEMS Linux ' . $nemsver;
+  // The card below won't do anything until MS Teams supports adaptive cards... See note and link above.
+  $hookObject->body = array();
+  $hookObject->body[0] = array();
+  $hookObject->body[0]['type'] = 'ColumnSet';
+  $hookObject->body[0]['spacing'] = 'large';
 
-$hookObject->embeds[0]['fields'] = $output;
+  $hookObject->body[0]['columns'] = array();
+
+  $hookObject->body[0]['columns'][0]['width'] = '32px';
+  $hookObject->body[0]['columns'][0]['items'] = array();
+
+  $hookObject->body[0]['columns'][0]['items'][0]['type'] = 'Image';
+  $hookObject->body[0]['columns'][0]['items'][0]['width'] = '16px';
+  $hookObject->body[0]['columns'][0]['items'][0]['horizontalAlignment'] = 'center';
+  $hookObject->body[0]['columns'][0]['items'][0]['url'] = $light_cdn . $color . '.png';
+  $hookObject->body[0]['columns'][0]['items'][0]['altText'] = strtoupper($state);
+
+  $hookObject->body[0]['columns'][1]['width'] = 'stretch';
+  $hookObject->body[0]['columns'][1]['items'] = array();
+
+  $hookObject->body[0]['columns'][1]['items'][0] = array();
+  $hookObject->body[0]['columns'][1]['items'][0]['type'] = 'TextBlock';
+  $hookObject->body[0]['columns'][1]['items'][0]['text'] = '**' . $nemsstate . '**';
+
+  $hookObject->body[0]['columns'][1]['items'][1] = array();
+  $hookObject->body[0]['columns'][1]['items'][1]['type'] = 'TextBlock';
+  $hookObject->body[0]['columns'][1]['items'][1]['text'] = $currentissueshead;
+
+  $hookObject->body[0]['columns'][1]['items'][2] = array();
+  $hookObject->body[0]['columns'][1]['items'][2]['type'] = 'TextBlock';
+  $hookObject->body[0]['columns'][1]['items'][2]['text'] = '**Reporting Server:** ' . $alias;
+
+  $hookObject->body[0]['columns'][1]['items'][3] = array();
+  $hookObject->body[0]['columns'][1]['items'][3]['type'] = 'TextBlock';
+  $hookObject->body[0]['columns'][1]['items'][3]['spacing'] = 'none';
+  $hookObject->body[0]['columns'][1]['items'][3]['text'] = '**Timestamp:** ' . date('c');
+
+  $hookObject->body[0]['columns'][1]['items'][4] = array();
+  $hookObject->body[0]['columns'][1]['items'][4]['type'] = 'TextBlock';
+  $hookObject->body[0]['columns'][1]['items'][4]['isSubtle'] = 'true';
+  $hookObject->body[0]['columns'][1]['items'][4]['spacing'] = 'small';
+  $hookObject->body[0]['columns'][1]['items'][4]['text'] = 'Powered by NEMS Linux ' . $nemsver;
+
+} else { // Discord
+  $hookObject->content = strtoupper($state);
+  $hookObject->username = 'NEMS ' . strtoupper($state);
+  $hookObject->avatar_url = $light_cdn . $color . '.png';
+  $hookObject->tts = false;
+
+  $hookObject->embeds = array();
+  $hookObject->embeds[0] = array();
+  $hookObject->embeds[0]['title'] = $currentissueshead;
+  $hookObject->embeds[0]['type'] = 'rich';
+  $hookObject->embeds[0]['description'] = '';
+  $hookObject->embeds[0]['timestamp'] = date('c');
+  $hookObject->embeds[0]['color'] = hexdec('FFFFFF');
+
+  $hookObject->embeds[0]['author'] = new stdClass();
+  $hookObject->embeds[0]['author']->name = 'Reporting Server: ' . $alias;
+
+  $hookObject->embeds[0]['footer'] = new stdClass();
+  $hookObject->embeds[0]['footer']->text = 'Powered by NEMS Linux ' . $nemsver;
+
+  $hookObject->embeds[0]['fields'] = $output;
+}
+
+
 
 $ch = curl_init();
 
