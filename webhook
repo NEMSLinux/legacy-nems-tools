@@ -1,8 +1,8 @@
 <?php
 
 // For testing
-$currentissueshead = "Test";
-$state = "CRITICAL";
+//$currentissueshead = "Test";
+//$state = "CRITICAL";
 
 
 // this file is included from warninglight. Not run separately.
