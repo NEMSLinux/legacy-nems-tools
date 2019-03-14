@@ -79,9 +79,10 @@ if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.micr
   $hookObject->{@schema} = 'https://adaptivecards.io/schemas/adaptive-card.json';
   $hookObject->type = 'AdaptiveCard';
   $hookObject->version = '1.0';
+  $hookObject->username = 'NEMS ' . strtoupper($state);
 
   // For now, have to do plain text since Adaptive Cards don't work in MS Teams [yet] - see https://stackoverflow.com/questions/50753072/microsoft-teams-webhook-generating-400-for-adaptive-card#comment93907448_50753413
-  $hookObject->text = "**$nemsstate**\n\n$currentissueshead\n\n**Reporting Server:** $alias\n\n**Timestamp:** " . date('c') . "\n\nPowered by NEMS Linux $nemsver";
+  $hookObject->text = "**$nemsstate**\n\n" . str_replace(PHP_EOL,'\n\n',$currentissues) . "\n\n**Reporting Server:** $alias\n\n**Timestamp:** " . date('c') . "\n\nPowered by NEMS Linux $nemsver";
 
   // The card below won't do anything until MS Teams supports adaptive cards... See note and link above.
   $hookObject->body = array();
@@ -109,7 +110,7 @@ if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.micr
 
   $hookObject->body[0]['columns'][1]['items'][1] = array();
   $hookObject->body[0]['columns'][1]['items'][1]['type'] = 'TextBlock';
-  $hookObject->body[0]['columns'][1]['items'][1]['text'] = $currentissueshead;
+  $hookObject->body[0]['columns'][1]['items'][1]['text'] = $currentissues;
 
   $hookObject->body[0]['columns'][1]['items'][2] = array();
   $hookObject->body[0]['columns'][1]['items'][2]['type'] = 'TextBlock';
@@ -129,10 +130,11 @@ if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.micr
 } elseif (strstr($webhook,'slack.com')) { // Slack
 
   $nemsstate = trim('NEMS ' . $currentissueshead);
-  $hookObject->username = $alias;
+  $hookObject->username = 'NEMS ' . strtoupper($state);
   $hookObject->icon_url = $light_cdn . $color . '.png';
-  $hookObject->text = "*$nemsstate*\n\n$currentissueshead\n\n*Reporting Server:* $alias\n\n*Timestamp:* " . date('c') . "\n\nPowered by <https://nemslinux.com/|NEMS Linux $nemsver>";
-
+  $hookObject->text = "*$nemsstate*\n\n" . str_replace(PHP_EOL,"\n\n",$currentissues) . "\n\n*Reporting Server:* $alias\n\n*Timestamp:* " . date('c') . "\n\nPowered by <https://nemslinux.com/|NEMS Linux $nemsver>";
+print_r($hookObject->text);
+echo PHP_EOL;
 } else { // Discord
   $hookObject->content = strtoupper($state);
   $hookObject->username = 'NEMS ' . strtoupper($state);
