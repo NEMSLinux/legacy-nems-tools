@@ -1,5 +1,10 @@
 <?php
 
+// For testing
+$currentissueshead = "Test";
+$state = "CRITICAL";
+
+
 // this file is included from warninglight. Not run separately.
 
 $webhook = trim(shell_exec('/usr/local/bin/nems-info webhook'));
@@ -120,6 +125,13 @@ if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.micr
   $hookObject->body[0]['columns'][1]['items'][4]['isSubtle'] = 'true';
   $hookObject->body[0]['columns'][1]['items'][4]['spacing'] = 'small';
   $hookObject->body[0]['columns'][1]['items'][4]['text'] = 'Powered by NEMS Linux ' . $nemsver;
+
+} elseif (strstr($webhook,'slack.com')) { // Slack
+
+  $nemsstate = trim('NEMS ' . $currentissueshead);
+  $hookObject->username = $alias;
+  $hookObject->icon_url = $light_cdn . $color . '.png';
+  $hookObject->text = "*$nemsstate*\n\n$currentissueshead\n\n*Reporting Server:* $alias\n\n*Timestamp:* " . date('c') . "\n\nPowered by <https://nemslinux.com/|NEMS Linux $nemsver>";
 
 } else { // Discord
   $hookObject->content = strtoupper($state);
