@@ -1,10 +1,5 @@
 <?php
 
-// For testing
-//$currentissueshead = "Test";
-//$state = "CRITICAL";
-
-
 // this file is included from warninglight. Not run separately.
 
 $webhook = trim(shell_exec('/usr/local/bin/nems-info webhook'));
@@ -133,9 +128,8 @@ if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.micr
   $hookObject->username = 'NEMS ' . strtoupper($state);
   $hookObject->icon_url = $light_cdn . $color . '.png';
   $hookObject->text = "*$nemsstate*\n\n" . str_replace(PHP_EOL,"\n\n",$currentissues) . "\n\n*Reporting Server:* $alias\n\n*Timestamp:* " . date('c') . "\n\nPowered by <https://nemslinux.com/|NEMS Linux $nemsver>";
-print_r($hookObject->text);
-echo PHP_EOL;
-} else { // Discord
+
+} elseif (strstr($webhook,'discordapp.com'))  { // Discord
   $hookObject->content = strtoupper($state);
   $hookObject->username = 'NEMS ' . strtoupper($state);
   $hookObject->avatar_url = $light_cdn . $color . '.png';
@@ -156,6 +150,9 @@ echo PHP_EOL;
   $hookObject->embeds[0]['footer']->text = 'Powered by NEMS Linux ' . $nemsver;
 
   $hookObject->embeds[0]['fields'] = $output;
+} else {
+  echo 'Unsupported Webhook.';
+  exit();
 }
 
 
