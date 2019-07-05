@@ -1,0 +1,43 @@
+#!/usr/bin/env php
+<?php
+  // This script reads json pin state data from a NEMS Linux server
+  // running the NEMS Tools GPIO Extender Server on port 9595.
+
+  if (file_exists('/usr/local/bin/gpio')) {
+    $hardware=1;
+  } else {
+    $hardware=0;
+  }
+
+  // Can be an IP address or FQDN
+  $serverIP = '127.0.0.1'; // to be overridden with config file later
+
+  $url = $serverIP . ':9595'; // need to specify the port of the GPIOE Server
+  if ($serverIP == '127.0.0.1' || $serverIP == trim(shell_exec('/usr/local/bin/nems-info ip'))) {
+    // You can't run the client on the same server as the server... you'd then have two GPIO daemons controlling the GPIO
+    die('Cannot run a NEMS Tools GPIO Extender Client on this server.' . PHP_EOL . 'You need a NEMS Tools client device. Please read the docs.' . PHP_EOL);
+  }
+  while (1 == 1) {
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_HEADER, false);
+    $data = curl_exec($curl);
+    curl_close($curl);
+    $GPIO = json_decode($data);
+    if (json_last_error() === 0) {
+      echo 'Connection successful.';
+      if ($hardware == 0) {
+        die(' However, no Raspberry Pi GPIO detected.' . PHP_EOL);
+      }
+      echo PHP_EOL;
+      foreach ($GPIO as $pin=>$state) {
+        if ($hardware != 0) shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' ' . $state);
+      }
+    } else {
+      echo 'Could not find a running NEMS Tools GPIO Extender Server at ' . $serverIP . PHP_EOL;
+      exit();
+    }
+    sleep(10); // Refresh every 10 seconds
+  }
+?>

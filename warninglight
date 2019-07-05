@@ -51,6 +51,7 @@ file_put_contents('/var/run/warninglight.pid',$pid);
 // Setup GPIO
   echo '[' . date('Y-m-d g:i:sa') . '] Initializing warninglight... ';
   $GPIO = new stdClass();
+  $GPIO->pins = array('ok'=>24,'unknown'=>23,'warning'=>23,'critical'=>18,'siren'=>18);
   if (file_exists('/usr/local/bin/gpio')) {
     $hardware=1;
   } else {
@@ -59,7 +60,6 @@ file_put_contents('/var/run/warninglight.pid',$pid);
   if ($platform >= 0 || $platfrom <= 9) {
     // Raspberry Pi
     if ($hardware == 1) {
-      $GPIO->pins = array('ok'=>24,'unknown'=>23,'warning'=>23,'critical'=>18,'siren'=>18);
       foreach ($GPIO->pins as $status => $pin) {
         shell_exec('/usr/local/bin/gpio -g mode ' . $pin . ' output');
       }
@@ -88,7 +88,7 @@ file_put_contents('/var/run/warninglight.pid',$pid);
       lightOn('unknown',1000);
       echo 'Done.';
     } else {
-      echo 'Cannot initialize hardware (only supported on Pi).';
+      echo 'Cannot initialize local hardware. GPIO Extender enabled.';
     }
   } else {
     echo 'Daemon loaded, but hardware is not compatible with this SBC.' . PHP_EOL;
@@ -289,16 +289,18 @@ function setstate($state) {
 
 function lightOn($thisstatus,$delay=100000) {
   global $GPIO,$hardware;
-  if ($hardware==0) return;
   $chosenpin = '';
   foreach ($GPIO->pins as $status=>$pin) {
     if ($status == $thisstatus || $thisstatus == 'all') {
-      shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' 1');
+      if ($hardware != 0) shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' 1');
       $chosenpin = $pin;
+      $GPIO->state[$pin] = 1;
     } elseif ($pin != $chosenpin) {
-      shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' 0');
+      if ($hardware != 0) shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' 0');
+      $GPIO->state[$pin] = 0;
     }
   }
+  file_put_contents('/var/log/nems/nems-tools/gpio-extender.json',json_encode($GPIO->state));
   usleep($delay);
 }
 

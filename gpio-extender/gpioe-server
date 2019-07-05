@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Check if a PID exists. If yes, check if it is running and abort if yes.
+if [[ -e /var/run/nems-gpioe-server.pid ]]; then
+  running=$(cat /var/run/nems-gpioe-server.pid)
+  if ps -p $running > /dev/null
+    then
+      echo "Already running"
+      exit
+    fi
+fi
+
+# Store the PID (so you can more easily kill the process)
+echo $$ > /var/run/nems-gpioe-server.pid
+
+# Turn on all lights while server is starting
+echo '{"24":1,"23":1,"18":1}' > /var/log/nems/nems-tools/gpio-extender.json
+
+# Install socat if not already installed
+if [[ ! `which socat` ]]; then
+  apt update
+  yes | apt install socat
+fi
+
+# Load the server on port 9595
+  socat -T 1 -d tcp-l:9595,reuseaddr,fork,crlf system:"cat /var/log/nems/nems-tools/gpio-extender.json";
