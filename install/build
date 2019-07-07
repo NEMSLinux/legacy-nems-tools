@@ -37,14 +37,22 @@ fi
   # Dump current crontab to tmp file
   crontab -l > /tmp/cron.tmp
 
-  if ! grep -q "NEMS0012" /tmp/cron.tmp; then
-    if [[ ! -d /var/log/nems/nems-tools/ ]]; then
-      mkdir -p /var/log/nems/nems-tools/
-    fi
-    printf "\n# nems-tools warninglight NEMS0012\n@reboot /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1\n" >> /tmp/cron.tmp
-    cronupdate=1
+#  if ! grep -q "NEMS0012" /tmp/cron.tmp; then
+#    if [[ ! -d /var/log/nems/nems-tools/ ]]; then
+#      mkdir -p /var/log/nems/nems-tools/
+#    fi
+#    printf "\n# nems-tools warninglight NEMS0012\n@reboot /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1\n" >> /tmp/cron.tmp
+#    cronupdate=1
     # Run it now
-    /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1 &
+#    /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1 &
+#  fi
+
+  # Install the NEMS Tools GPIO Extender daemon.
+  if ! grep -q "NEMS0016" /tmp/cron.tmp; then
+    printf "\n# NEMS Tools GPIO Extender Server NEMS0016\n@reboot /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1\n" >> /tmp/cron.tmp
+    cronupdate=1
+    # Run it
+    /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1 &
   fi
 
   # Import revised crontab
