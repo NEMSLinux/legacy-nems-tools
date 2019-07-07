@@ -1,13 +1,15 @@
 #!/bin/bash
 
-if (file_exists('/usr/local/bin/nems-info')) {
-  $platform = shell_exec('/usr/local/bin/nems-info platform');
-} else {
-  $platform = 0; // Assume this is a raw Pi distro
-}
+if [[ -e /usr/local/bin/nems-info ]]; then
+  platform=$(/usr/local/bin/nems-info platform)
+else
+  platform=0 # Assume this is a raw Pi distro
+fi
 
 apt update
-apt -y install php7.0 apache2 libapache2-mod-php php-curl
+apt -y install php7.3 apache2 libapache2-mod-php php-curl
+
+tmpdir=`mktemp -d -p /tmp/`
 
 # Activate /nems-tools Apache conf
 ln -s /root/nems/nems-tools/install/apache2.conf /etc/apache2/conf-available/nems-tools.conf
@@ -23,8 +25,8 @@ git config --global user.name "NEMS Tools"
   fi
  fi
 
-# Only setup GPIO connections on Raspberry Pi
-if ($platform >= 0 || $platfrom <= 9) {
+# Setup GPIO connections on Raspberry Pi
+if (( $platform >= 0 )) && (( $platform <= 9 )); then
   cd /root/nems/
   git clone git://git.drogon.net/wiringPi
   cd wiringPi
@@ -35,21 +37,11 @@ fi
 # Add new cron entries
 
   # Dump current crontab to tmp file
-  crontab -l > /tmp/cron.tmp
-
-#  if ! grep -q "NEMS0012" /tmp/cron.tmp; then
-#    if [[ ! -d /var/log/nems/nems-tools/ ]]; then
-#      mkdir -p /var/log/nems/nems-tools/
-#    fi
-#    printf "\n# nems-tools warninglight NEMS0012\n@reboot /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1\n" >> /tmp/cron.tmp
-#    cronupdate=1
-    # Run it now
-#    /root/nems/nems-tools/warninglight >> /var/log/nems/nems-tools/warninglight 2>&1 &
-#  fi
+  crontab -l > $tmpdir/cron.tmp
 
   # Install the NEMS Tools GPIO Extender daemon.
-  if ! grep -q "NEMS0016" /tmp/cron.tmp; then
-    printf "\n# NEMS Tools GPIO Extender Server NEMS0016\n@reboot /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1\n" >> /tmp/cron.tmp
+  if ! grep -q "NEMS0016" $tmpdir/cron.tmp; then
+    printf "\n# NEMS Tools GPIO Extender Server NEMS0016\n@reboot /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1\n" >> $tmpdir/cron.tmp
     cronupdate=1
     # Run it
     /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1 &
@@ -58,11 +50,11 @@ fi
   # Import revised crontab
   if [[ "$cronupdate" == "1" ]]
   then
-    crontab /tmp/cron.tmp
+    crontab $tmpdir/cron.tmp
   fi
 
   # Remove temp file
-  rm /tmp/cron.tmp
+  rm $tmpdir/cron.tmp
 
 # /Add new cron entries
 
