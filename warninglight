@@ -25,6 +25,9 @@ if ($isrunning == 1 && ($pid != $pidfromfile)) {
 
 file_put_contents('/var/run/warninglight.pid',$pid);
 
+// Sleep to allow the GPIO Extender to initialize
+  sleep(30);
+
 // Let's go!
 
   if (file_exists('/etc/nems/nems-tools.conf')) {
