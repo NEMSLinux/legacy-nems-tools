@@ -18,7 +18,7 @@ echo '{"24":1,"23":1,"18":1}' > /var/log/nems/nems-tools/gpio-extender.json
 
 # Install socat if not already installed
 if [[ ! `which socat` ]]; then
-  apt update
+  yes | apt update
   yes | apt install socat
 fi
 
