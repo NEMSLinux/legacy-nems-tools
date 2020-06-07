@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# Get your PiVoyager hat at https://cat5.tv/pivoyager
+
+# This script behaves exactly like the PiWatcher script.
+# This script, however, adds a safe shutdown upon battery depletion.
+# PiVoyager also includes a smart UPS, which is monitored via the
+# check_pivoyager checkcommand in NEMS Linux.
+
+# PiVoyager works by listening for its program to be called.
+# If the hat doesn't receive a heartbeat within 2 minutes,
+# power is cut to the Pi.
+# This script ensures a heartbeat is sent every 45 seconds, and
+# the Pi is powered back on after 15 seconds of power off.
+# This way, if the Pi locks up, it will be automatically restarted.
+
+# For those interested, here's how I compile and install PiVoyager:
+# https://github.com/Cat5TV/nems-admin/blob/master/build/160-rpi-pivoyager
+
+platform=$(/usr/local/bin/nems-info platform)
+# If you're not using NEMS Linux but still want to use my script, comment the command above and uncomment this:
+#platform=1
+
+# Check if a PID exists. If yes, check if it is running and abort if yes.
+if [[ -e /var/run/nems-pivoyager.pid ]]; then
+  running=$(cat /var/run/nems-pivoyager.pid)
+  if ps -p $running > /dev/null
+    then
+      echo "Already running"
+      exit
+    fi
+fi
+
+# Store the PID (so you can more easily kill the process)
+echo $$ > /var/run/nems-pivoyager.pid
+
+function checkState {
+  output=$(pivoyager status flags | grep "pg")
+  if [[ ${output} != "" ]]; then
+    state="USB"
+  else
+    state="Battery"
+  fi
+  voltage=$(pivoyager status voltage | grep VBat: | awk '{print $2}' | sed 's/\V//g')
+}
+
+
+if [[ $(/usr/local/bin/pivoyager version 2>&1 | grep -i 'not found') != '' ]]; then
+  echo "pivoyager application was not found."
+  echo "Please install it and try again."
+  exit 1
+fi
+
+
+if (( $platform < '10' )); then
+
+  # Just in case user is not on NEMS, create a log folder
+  if [[ ! -d /var/log/nems ]]; then
+    mkdir /var/log/nems
+  fi
+
+  # Check if a PiVoyager is installed
+  pivoyager=$(/usr/local/bin/pivoyager status 2>&1)
+  if [[ $pivoyager == *"ERR"* ]]; then
+    echo 0 > /var/log/nems/pivoyager
+    echo "No PiVoyager board detected. Get yours at https://cat5.tv/pivoyager"
+    exit
+  fi
+
+  echo 1 > /var/log/nems/pivoyager
+
+  echo "$(date) PiVoyager Activated." >> /var/log/nems/pivoyager.log
+
+  # Set the RTC based on the Raspberry Pi system clock (NTP)
+  # Will need this if user wants to set alarms
+  /usr/local/bin/pivoyager date sync
+
+  # Tell the PiVoyager to turn on the NEMS Server after power is restored
+  /usr/local/bin/pivoyager enable power-wakeup
+
+  # Tell the PiVoyager to turn on the NEMS Server after a set timer
+  /usr/local/bin/pivoyager enable timer-wakeup
+
+  # Set PiVoyager to re-power the NEMS Server after 15 seconds of power off
+  /usr/local/bin/pivoyager wakeup 15
+
+  # Tell the PiVoyager to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
+#  /usr/local/bin/pivoyager watchdog 120
+
+  # Prevent PiVoyager from shutting down the NEMS server
+  while true
+  do
+    # Send heartbeat to PiVoyager every 45 seconds, resetting the 2 minute countdown
+    checkState
+    if [[ $state == "Battery" ]]; then
+      if (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.3'")}') )); then
+        # 3.1V is LOW, so let's do a safe shutdown at 3.3V
+          echo "$(date) PiVoyager Safely Shutting Down NEMS Server: Power Out, Battery Depleted to ${voltage}V." >> /var/log/nems/pivoyager.log
+          sync
+          # Power back on when power is restored
+            /usr/local/bin/pivoyager enable power-wakeup
+          # Completely kill power (stop draining the battery) after 60 seconds
+            /usr/local/bin/pivoyager watchdog 60
+          # Shut'er down, safely
+            /sbin/shutdown now
+            exit
+      fi
+    fi
+    sleep 45
+  done
+
+fi
+
+rm /var/run/nems-pivoyager.pid
