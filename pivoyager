@@ -99,12 +99,14 @@ if (( $platform < '10' )); then
 
   # Check if a PiVoyager is installed
   pivoyager=$(/usr/local/bin/pivoyager status 2>&1)
+  # RESET the state upon run, in case user removed PiVoyager on last boot
+  echo 0 > /var/log/nems/pivoyager
   if [[ $pivoyager == *"ERR"* ]]; then
-    echo 0 > /var/log/nems/pivoyager
     echo "No PiVoyager board detected. Get yours at https://cat5.tv/pivoyager"
     exit
   fi
 
+  # We got this far, so the PiVoyager exists. Set the state.
   echo 1 > /var/log/nems/pivoyager
 
   echo "$(date) PiVoyager Activated." >> /var/log/nems/pivoyager.log
