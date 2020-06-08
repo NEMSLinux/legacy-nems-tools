@@ -130,8 +130,8 @@ if (( $platform < '10' )); then
     # Send heartbeat to PiVoyager every 45 seconds, resetting the 2 minute countdown
     checkState
     if [[ $state == "Battery" ]]; then
-      if [[ ! $voltage == "" ]] && (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.2'")}') )); then
-        # 3.1V is LOW, so let's do a safe shutdown at 3.2V
+      if [[ ! $voltage == "" ]] && (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.3'")}') )); then
+        # 3.1V is LOW, so let's do a safe shutdown at under 3.3V
           echo "$(date) PiVoyager Safely Shutting Down NEMS Server: Power Out, Battery Depleted to ${voltage}V." >> /var/log/nems/pivoyager.log
           sync
           # Power back on when power is restored
