@@ -85,7 +85,7 @@ if (( $platform < '10' )); then
   /usr/local/bin/pivoyager wakeup 15
 
   # Tell the PiVoyager to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
-#  /usr/local/bin/pivoyager watchdog 120
+  /usr/local/bin/pivoyager watchdog 120
 
   # Prevent PiVoyager from shutting down the NEMS server
   while true
