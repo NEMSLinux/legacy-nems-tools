@@ -21,6 +21,9 @@ platform=$(/usr/local/bin/nems-info platform)
 # If you're not using NEMS Linux but still want to use my script, comment the command above and uncomment this:
 #platform=1
 
+# To output a lot more info to screen set debug=1 by uncommenting:
+debug=1
+
 # Check if a PID exists. If yes, check if it is running and abort if yes.
 if [[ -e /var/run/nems-pivoyager.pid ]]; then
   running=$(cat /var/run/nems-pivoyager.pid)
@@ -35,22 +38,53 @@ fi
 echo $$ > /var/run/nems-pivoyager.pid
 
 function checkState {
+  # Tell the PiVoyager to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
+  # This activates and resets the i2C watchdog every iteration of the loop
+  /usr/local/bin/pivoyager watchdog 120
+
+  # Store the previous state
+  if [[ ! $state == "" ]]; then
+    oldstate=$state
+  fi
+
+  # Get the state data
   output=$(pivoyager status flags | grep "pg")
   if [[ ${output} != "" ]]; then
     state="USB"
+    if [[ ! $oldstate == "" ]] && [[ $state != $oldstate ]]; then
+      echo "$(date) Power restored." >> /var/log/nems/pivoyager.log
+      if [[ $debug == 1 ]]; then
+        echo "Power restored.";
+      fi
+    fi
   else
     state="Battery"
+    if [[ ! $oldstate == "" ]] && [[ $state != $oldstate ]]; then
+      echo "$(date) Power lost. Switched to Battery." >> /var/log/nems/pivoyager.log
+      if [[ $debug == 1 ]]; then
+        echo "Power lost. Switched to Battery.";
+      fi
+    fi
   fi
   voltage=$(pivoyager status voltage | grep VBat: | awk '{print $2}' | sed 's/\V//g')
+  if [[ $debug == 1 ]]; then
+    echo "Current Power: ${voltage}V.";
+  fi
+  battery=$(pivoyager status battery | sed 's/Battery: //g')
+  if [[ $debug == 1 ]]; then
+    echo "Battery: ${battery}.";
+  fi
 }
-
 
 if [[ $(/usr/local/bin/pivoyager version 2>&1 | grep -i 'not found') != '' ]]; then
   echo "pivoyager application was not found."
-  echo "Please install it and try again."
-  exit 1
+  if [[ -e /root/nems/nems-admin/build/160-rpi-pivoyager ]]; then
+    /root/nems/nems-admin/build/160-rpi-pivoyager
+  else
+    echo "Please install it and try again."
+    exit 1
+  fi
 fi
-
 
 if (( $platform < '10' )); then
 
@@ -84,17 +118,14 @@ if (( $platform < '10' )); then
   # Set PiVoyager to re-power the NEMS Server after 15 seconds of power off
   /usr/local/bin/pivoyager wakeup 15
 
-  # Tell the PiVoyager to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
-  /usr/local/bin/pivoyager watchdog 120
-
   # Prevent PiVoyager from shutting down the NEMS server
   while true
   do
     # Send heartbeat to PiVoyager every 45 seconds, resetting the 2 minute countdown
     checkState
     if [[ $state == "Battery" ]]; then
-      if (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.3'")}') )); then
-        # 3.1V is LOW, so let's do a safe shutdown at 3.3V
+      if (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.4'")}') )); then
+        # 3.1V is LOW, so let's do a safe shutdown at 3.4V
           echo "$(date) PiVoyager Safely Shutting Down NEMS Server: Power Out, Battery Depleted to ${voltage}V." >> /var/log/nems/pivoyager.log
           sync
           # Power back on when power is restored
@@ -102,6 +133,9 @@ if (( $platform < '10' )); then
           # Completely kill power (stop draining the battery) after 60 seconds
             /usr/local/bin/pivoyager watchdog 60
           # Shut'er down, safely
+          if [[ $debug == 1 ]]; then
+            echo "Battery Depleted. Shutting Down.";
+          fi
             /sbin/shutdown now
             exit
       fi
