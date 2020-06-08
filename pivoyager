@@ -22,7 +22,7 @@ platform=$(/usr/local/bin/nems-info platform)
 #platform=1
 
 # To output a lot more info to screen set debug=1 by uncommenting:
-debug=1
+#debug=1
 
 # Check if a PID exists. If yes, check if it is running and abort if yes.
 if [[ -e /var/run/nems-pivoyager.pid ]]; then
@@ -48,7 +48,7 @@ function checkState {
   fi
 
   # Get the state data
-  output=$(pivoyager status flags | grep "pg")
+  output=$(/usr/local/bin/pivoyager status flags | grep "pg")
   if [[ ${output} != "" ]]; then
     state="USB"
     if [[ ! $oldstate == "" ]] && [[ $state != $oldstate ]]; then
@@ -66,19 +66,23 @@ function checkState {
       fi
     fi
   fi
-  voltage=$(pivoyager status voltage | grep VBat: | awk '{print $2}' | sed 's/\V//g')
+
+  voltage=$(/usr/local/bin/pivoyager status voltage | grep VBat: | awk '{print $2}' | sed 's/\V//g')
   if [[ $debug == 1 ]]; then
     echo "Current Power: ${voltage}V.";
   fi
-  battery=$(pivoyager status battery | sed 's/Battery: //g')
+
+  battery=$(/usr/local/bin/pivoyager status battery | sed 's/Battery: //g')
   if [[ $debug == 1 ]]; then
     echo "Battery: ${battery}.";
   fi
+
 }
 
 if [[ $(/usr/local/bin/pivoyager version 2>&1 | grep -i 'not found') != '' ]]; then
-  echo "pivoyager application was not found."
+  echo "PiVoyager application was not found."
   if [[ -e /root/nems/nems-admin/build/160-rpi-pivoyager ]]; then
+    echo "Installing..."
     /root/nems/nems-admin/build/160-rpi-pivoyager
   else
     echo "Please install it and try again."
@@ -124,8 +128,8 @@ if (( $platform < '10' )); then
     # Send heartbeat to PiVoyager every 45 seconds, resetting the 2 minute countdown
     checkState
     if [[ $state == "Battery" ]]; then
-      if (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.4'")}') )); then
-        # 3.1V is LOW, so let's do a safe shutdown at 3.4V
+      if [[ ! $voltage == "" ]] && (( $(awk 'BEGIN {print ("'$voltage'" <= "'3.2'")}') )); then
+        # 3.1V is LOW, so let's do a safe shutdown at 3.2V
           echo "$(date) PiVoyager Safely Shutting Down NEMS Server: Power Out, Battery Depleted to ${voltage}V." >> /var/log/nems/pivoyager.log
           sync
           # Power back on when power is restored
@@ -136,8 +140,8 @@ if (( $platform < '10' )); then
           if [[ $debug == 1 ]]; then
             echo "Battery Depleted. Shutting Down.";
           fi
-            /sbin/shutdown now
-            exit
+          /sbin/shutdown now
+          exit
       fi
     fi
     sleep 45
