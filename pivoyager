@@ -79,7 +79,7 @@ function checkState {
 
 }
 
-if [[ $(/usr/local/bin/pivoyager version 2>&1 | grep -i 'not found') != '' ]]; then
+if [[ ! -e /usr/local/bin/pivoyager ]]; then
   echo "PiVoyager application was not found."
   if [[ -e /root/nems/nems-admin/build/160-rpi-pivoyager ]]; then
     echo "Installing..."
