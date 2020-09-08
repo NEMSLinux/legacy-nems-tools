@@ -92,7 +92,7 @@ if (strstr($webhook,'office.com')) { // MS Office 365 / Teams: https://docs.micr
   $hookObject->icon_url = $light_cdn . $color . '.png';
   $hookObject->text = "*$nemsstate*\n\n" . str_replace(PHP_EOL,"\n\n",$currentissues) . "\n\n*Reporting Server:* $alias\n\n*Timestamp:* " . date('c') . "\n\nPowered by <https://nemslinux.com/|NEMS Linux $nemsver>";
 
-} elseif (strstr($webhook,'discordapp.com'))  { // Discord
+} elseif ( strstr($webhook,'discord.com') || strstr($webhook,'discordapp.com') )  { // Discord
   $hookObject->content = strtoupper($state);
   $hookObject->username = 'NEMS ' . strtoupper($state);
   $hookObject->avatar_url = $light_cdn . $color . '.png';
@@ -129,8 +129,8 @@ curl_setopt_array( $ch, [
     CURLOPT_POST => true,
     CURLOPT_POSTFIELDS => $hookObjectJSON,
     CURLOPT_HTTPHEADER => [
-        "Length" => strlen( $hookObjectJSON ),
-        "Content-Type" => "application/json"
+        "Length: " . strlen( $hookObjectJSON ) . ',',
+        "Content-Type: application/json"
     ]
 ]);
 
