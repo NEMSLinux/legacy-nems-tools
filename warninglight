@@ -118,6 +118,10 @@ $definitions = new stdClass();
 // Begin daemon loop
 while (1 == 1) {
 
+# Tell the PiVoyager to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
+# This activates and resets the i2C watchdog every iteration of the loop
+/usr/local/bin/pivoyager watchdog 120
+
 $issues = array(); // reset at each iteration
 $states = query('hosts?Columns=name,state,services_with_fullstate');
 if (is_object($states) && count((array)$states) > 0) {
