@@ -24,7 +24,11 @@ if ($isrunning == 1 && ($pid != $pidfromfile)) {
 
 file_put_contents('/var/run/warninglight.pid',$pid);
 
-omzlo('green1 orange1 red1');
+omzlo('green3 orange3 red3');
+sleep(3);
+omzlo('buzzer3');
+sleep(1);
+omzlo('green2 orange1 red1');
 
 // Sleep to allow the GPIO Extender to initialize
   sleep(30);
@@ -243,6 +247,8 @@ function setstate($state) {
             );
           }
         }
+        omzlo('red2 buzzer2');
+        sleep(2);
         omzlo('red2');
       break;
 
@@ -283,6 +289,8 @@ function setstate($state) {
             }
           }      
         }
+        omzlo('red2 buzzer3');
+        sleep(3);
         omzlo('red3');
       break;
 
