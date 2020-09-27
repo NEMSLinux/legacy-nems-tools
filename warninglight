@@ -4,7 +4,6 @@ $v=0;
 $pid=getmypid();
 $user=trim(shell_exec('whoami'));
 if ($user != 'root') die('Access denied: Must be root.' . PHP_EOL);
-
 if (file_exists('/usr/local/bin/nems-info')) {
   $platform = shell_exec('/usr/local/bin/nems-info platform');
 } else {
@@ -24,6 +23,8 @@ if ($isrunning == 1 && ($pid != $pidfromfile)) {
 }
 
 file_put_contents('/var/run/warninglight.pid',$pid);
+
+omzlo('green1 orange1 red1');
 
 // Sleep to allow the GPIO Extender to initialize
   sleep(30);
@@ -185,6 +186,7 @@ function setstate($state) {
 
   // Activate appropriate light
     lightOn($state);
+    omzlo('green1');
 
   // only update status if state has changed
     switch ($state) {
@@ -196,6 +198,7 @@ function setstate($state) {
           'value' => 'No known issues',
           'inline' => false
         );
+	omzlo('green3');
       break;
 
       case 'unknown': // Turn on orange light.
@@ -212,6 +215,7 @@ function setstate($state) {
             'inline' => true
           );
         }
+        omzlo('orange1');
       break;
 
       case 'warning': // Turn on orange, flash or pulse red.
@@ -239,6 +243,7 @@ function setstate($state) {
             );
           }
         }
+        omzlo('red2');
       break;
 
       case 'critical': // Red solid light, siren for 3 seconds every 15 minutes.
@@ -278,6 +283,7 @@ function setstate($state) {
             }
           }      
         }
+        omzlo('red3');
       break;
 
     }
@@ -305,6 +311,11 @@ function lightOn($thisstatus,$delay=100000) {
   }
   file_put_contents('/var/log/nems/nems-tools/gpio-extender.json',json_encode($GPIO->state));
   usleep($delay);
+}
+
+// If an Omzlo Warninglights pHAT is available, trigger the appropriate lights
+function omzlo($alerts) {
+  shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $alerts);
 }
 
 unlink('/var/run/warninglight.pid');
