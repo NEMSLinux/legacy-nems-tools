@@ -223,7 +223,7 @@ function setstate($state) {
             'inline' => true
           );
         }
-        omzlo('orange1');
+        omzlo('green3 orange1');
       break;
 
       case 'warning': // Turn on orange, flash or pulse red.
