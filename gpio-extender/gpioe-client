@@ -10,15 +10,35 @@
   }
 
   // Can be an IP address or FQDN
-  $serverIP = '10.0.0.116'; // to be overridden with config file later
+  if (file_exists('/etc/nems/nems-tools.conf')) {
+    $conf = file('/etc/nems/nems-tools.conf');
+  } else {
+    $conf = file('/root/nems/nems-tools/nems-tools.conf'); // Default... localhost
+  }
+
+  if (is_array($conf) && (count($conf) > 0)) {
+    foreach ($conf as $line) {
+      $tmp = explode('=',$line);
+      if (is_array($tmp) && (count($tmp) == 2)) {
+        $stringname = $tmp[0];
+        // Eg. nemsserver=127.0.0.1 in nems-tools.conf will give $nemsserver here.
+        $$stringname = trim($tmp[1]);
+      }
+    }
+  } else {
+    die('Could not load nems-tools.conf.' . PHP_EOL);
+  }
+
+  if (!isset($nemsserver)) die('nemsserver missing from nems-tools.conf' . PHP_EOL);
+
   if (file_exists('/usr/local/bin/nems-info')) {
     $thisIP = trim(shell_exec('/usr/local/bin/nems-info ip'));
   } else {
     $thisIP = getHostByName(getHostName());
   }
 
-  $url = $serverIP . ':9595'; // need to specify the port of the GPIOE Server
-  if ($serverIP == '127.0.0.1' || $serverIP == $thisIP) {
+  $url = $nemsserver . ':9595'; // need to specify the port of the GPIOE Server
+  if ($nemsserver == '127.0.0.1' || $nemsserver == $thisIP) {
     // You can't run the client on the same server as the server... you'd then have two GPIO daemons controlling the GPIO
     die('Cannot run a NEMS Tools GPIO Extender Client on this server.' . PHP_EOL . 'You need a NEMS Tools client device. Please read the docs.' . PHP_EOL);
   }
@@ -31,7 +51,7 @@
     curl_close($curl);
     $GPIO = json_decode($data);
     if (json_last_error() === 0) {
-      echo 'GPIO Extension to ' . $serverIP . ' successful. ';
+      echo 'GPIO Extension to ' . $nemsserver . ' successful. ';
       if ($hardware == 0) {
         die(' However, no Raspberry Pi GPIO detected.' . PHP_EOL);
       }
@@ -41,7 +61,7 @@
       }
       echo PHP_EOL;
     } else {
-      echo 'Could not find a running NEMS Tools GPIO Extender Server at ' . $serverIP . PHP_EOL;
+      echo 'Could not find a running NEMS Tools GPIO Extender Server at ' . $nemsserver . PHP_EOL;
       exit();
     }
     sleep(10); // Refresh every 10 seconds
