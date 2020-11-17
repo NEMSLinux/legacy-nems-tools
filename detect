@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Detect a NEMS Server on this subnet and add config file for NEMS Tools
+# Depends: nmap jq
+
+echo "NEMS Tools NEMS Server Detector"
+
+if [[ ! -e /etc/nems/nems-tools.conf ]]; then
+  foundnems=0
+  subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}')
+  echo "Loading servers on $subnet."
+  ips=$(nmap -n -sn $subnet -oG - | awk '/Up$/{print $2}')
+  found=$(echo "$ips" | wc -l)
+  echo "Found $found active IP addresses on subnet."
+  echo "Checking if any are a NEMS Server."
+  for ip in $ips; do
+    response=$(curl -m 3 -s "http://$ip/nems-api/hosts")
+    detect=$(echo $response | jq -rMc '.success' 2>&1)
+    shopt -s nocasematch
+    case "$detect" in
+     "true" ) echo "nemsserver=$ip" >> /etc/nems/nems-tools.conf; echo "Detected NEMS Server at $ip"; foundnems=$((foundnems+1));
+    esac
+  done
+  if (( $foundnems > 0 )); then
+    echo "Found $foundnems."
+  else
+    echo "I could not find a NEMS Server!"
+  fi
+else
+
+  echo "Configuration already exists:"
+  cat /etc/nems/nems-tools.conf
+
+fi

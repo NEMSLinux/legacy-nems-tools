@@ -6,8 +6,9 @@ else
   platform=0 # Assume this is a raw Pi distro
 fi
 
-apt update
-apt -y install php7.3 apache2 libapache2-mod-php php-curl
+apt-get update
+apt-get install -y php7.3 apache2 libapache2-mod-php php-curl
+apt-get install -y nmap jq
 
 tmpdir=`mktemp -d -p /tmp/`
 
@@ -45,6 +46,11 @@ fi
     cronupdate=1
     # Run it
     /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1 &
+  fi
+
+  if ! grep -q "NEMS0021" $tmpdir/cron.tmp; then
+    printf "\n# Detect NEMS Server local IP on same Subnet and set NEMS Tools config to point to it NEMS0021\n@reboot /root/nems/nems-tools/detect > /dev/null 2>&1\n" >> /tmp/cron.tmp
+    cronupdate=1
   fi
 
   # Import revised crontab
