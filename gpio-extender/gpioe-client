@@ -55,10 +55,11 @@
       if ($hardware == 0) {
         die(' However, no Raspberry Pi GPIO detected.' . PHP_EOL);
       }
-      foreach ($GPIO as $pin=>$state) {
+      foreach ($GPIO->state as $pin=>$state) {
         if ($hardware != 0) shell_exec('/usr/local/bin/gpio -g write ' . $pin . ' ' . $state);
         echo '(Pin ' . $pin . ': ' . $state . ') ';
       }
+      shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $GPIO->omzlo);
       echo PHP_EOL;
     } else {
       echo 'Could not find a running NEMS Tools GPIO Extender Server at ' . $nemsserver . PHP_EOL;
@@ -66,4 +67,5 @@
     }
     sleep(10); // Refresh every 10 seconds
   }
+
 ?>

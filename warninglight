@@ -24,6 +24,8 @@ if ($isrunning == 1 && ($pid != $pidfromfile)) {
 
 file_put_contents('/var/run/warninglight.pid',$pid);
 
+$GPIO = new stdClass();
+
 omzlo('green3 orange3 red3');
 sleep(3);
 //omzlo('buzzer3');
@@ -58,14 +60,13 @@ omzlo('green2 orange1 red1');
 
 // Setup GPIO
   echo '[' . date('Y-m-d g:i:sa') . '] Initializing warninglight... ';
-  $GPIO = new stdClass();
   $GPIO->pins = array('ok'=>24,'unknown'=>23,'warning'=>23,'critical'=>18,'siren'=>18);
   if (file_exists('/usr/local/bin/gpio')) {
     $hardware=1;
   } else {
     $hardware=0;
   }
-  if ($platform >= 0 || $platfrom <= 9) {
+  if ($platform >= 0 && $platform <= 9) {
     // Raspberry Pi
     if ($hardware == 1) {
       foreach ($GPIO->pins as $status => $pin) {
@@ -120,7 +121,9 @@ while (1 == 1) {
 
 # Tell the watchdog to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
 # This activates and resets the i2C watchdog every iteration of the loop
-shell_exec('/root/nems/nems-tools/omzlo-warninglights watchdog 120');
+if ($platform >= 0 && $platform <= 9) {
+  shell_exec('/root/nems/nems-tools/omzlo-warninglights watchdog 120');
+}
 
 $issues = array(); // reset at each iteration
 $states = query('hosts?Columns=name,state,services_with_fullstate');
@@ -321,13 +324,21 @@ function lightOn($thisstatus,$delay=100000) {
       $GPIO->state[$pin] = 0;
     }
   }
-  file_put_contents('/var/log/nems/nems-tools/gpio-extender.json',json_encode($GPIO->state));
+  // Only pass specific data (Keep the transmission small)
+  $pass = new stdClass();
+  $pass->state = $GPIO->state;
+  $pass->omzlo = $GPIO->omzlo;
+  file_put_contents('/var/log/nems/nems-tools/gpio-extender.json',json_encode($pass));
   usleep($delay);
 }
 
 // If an Omzlo Warninglights pHAT is available, trigger the appropriate lights
 function omzlo($alerts) {
-  shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $alerts);
+  global $GPIO, $platform;
+  $GPIO->omzlo = $alerts; // We'll still set the omzlo alerts since we might be passing it via GPIO Extender
+  if ($platform >= 0 && $platform <= 9) { // just don't run it if not a Pi host
+    shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $alerts);
+  }
 }
 
 unlink('/var/run/warninglight.pid');
