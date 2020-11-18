@@ -5,7 +5,7 @@
 
 echo "NEMS Tools NEMS Server Detector"
 
-if [[ ! -e /etc/nems/nems-tools.conf ]]; then
+if [[ ! -e /boot/nems-tools.conf ]]; then
   foundnems=0
   subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}')
   echo "Loading servers on $subnet."
@@ -18,7 +18,7 @@ if [[ ! -e /etc/nems/nems-tools.conf ]]; then
     detect=$(echo $response | jq -rMc '.nems' 2>&1)
     shopt -s nocasematch
     case "$detect" in
-     "true" ) echo "nemsserver=$ip" >> /etc/nems/nems-tools.conf; echo "Detected NEMS Server at $ip"; foundnems=$((foundnems+1));
+     "true" ) echo "nemsserver=$ip" >> /boot/nems-tools.conf; echo "Detected NEMS Server at $ip"; foundnems=$((foundnems+1));
     esac
   done
   if (( $foundnems > 0 )); then
@@ -29,6 +29,6 @@ if [[ ! -e /etc/nems/nems-tools.conf ]]; then
 else
 
   echo "Configuration already exists:"
-  cat /etc/nems/nems-tools.conf
+  cat /boot/nems-tools.conf
 
 fi

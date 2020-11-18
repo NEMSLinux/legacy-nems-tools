@@ -10,8 +10,8 @@
   }
 
   // Can be an IP address or FQDN
-  if (file_exists('/etc/nems/nems-tools.conf')) {
-    $conf = file('/etc/nems/nems-tools.conf');
+  if (file_exists('/boot/nems-tools.conf')) {
+    $conf = file('/boot/nems-tools.conf');
   } else {
     $conf = file('/root/nems/nems-tools/nems-tools.conf'); // Default... localhost
   }
