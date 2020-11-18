@@ -7,7 +7,7 @@ else
 fi
 
 apt-get update
-apt-get install -y php7.3 apache2 libapache2-mod-php php-curl
+apt-get install -y php apache2 libapache2-mod-php php-curl
 apt-get install -y nmap jq
 
 tmpdir=`mktemp -d -p /tmp/`
@@ -34,6 +34,9 @@ if (( $platform >= 0 )) && (( $platform <= 9 )); then
   ./build
 fi
 
+# Install Cockpit
+  curl https://raw.githubusercontent.com/Cat5TV/nems-admin/master/build/170-cockpit | bash
+  curl https://raw.githubusercontent.com/Cat5TV/nems-admin/master/build/171-cockpit | bash
 
 # Add new cron entries
 
