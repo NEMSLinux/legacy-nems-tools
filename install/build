@@ -10,7 +10,7 @@ apt-get update
 apt-get install -y php apache2 libapache2-mod-php php-curl
 apt-get install -y nmap jq
 
-tmpdir=`mktemp -d -p /tmp/`
+tmpdir=`mktemp -d -p /usr/local/src/`
 
 # Activate /nems-tools Apache conf
 ln -s /root/nems/nems-tools/install/apache2.conf /etc/apache2/conf-available/nems-tools.conf
@@ -28,15 +28,16 @@ git config --global user.name "NEMS Tools"
 
 # Setup GPIO connections on Raspberry Pi
 if (( $platform >= 0 )) && (( $platform <= 9 )); then
-  cd /root/nems/
-  git clone git://git.drogon.net/wiringPi
-  cd wiringPi
-  ./build
+  apt-get install -y wiringpi
 fi
 
 # Install Cockpit
-  curl https://raw.githubusercontent.com/Cat5TV/nems-admin/master/build/170-cockpit | bash
-  curl https://raw.githubusercontent.com/Cat5TV/nems-admin/master/build/171-cockpit | bash
+  wget https://raw.githubusercontent.com/Cat5TV/nems-admin/master/build/170-cockpit -O $tmpdir/170-cockpit
+  chmod +x $tmpdir/170-cockpit
+  $tmpdir/170-cockpit
+  wget https://raw.githubusercontent.com/Cat5TV/nems-admin/master/build/171-cockpit -O $tmpdir/171-cockpit
+  chmod +x $tmpdir/171-cockpit
+  $tmpdir/171-cockpit
 
 # Add new cron entries
 
@@ -45,14 +46,14 @@ fi
 
   # Install the NEMS Tools GPIO Extender daemon.
   if ! grep -q "NEMS0016" $tmpdir/cron.tmp; then
-    printf "\n# NEMS Tools GPIO Extender Server NEMS0016\n@reboot /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1\n" >> $tmpdir/cron.tmp
+    printf "\n# NEMS Tools GPIO Extender Client NEMS0016\n@reboot /root/nems/nems-tools/gpio-extender/gpioe-client > /dev/null 2>&1\n" >> $tmpdir/cron.tmp
     cronupdate=1
     # Run it
-    /root/nems/nems-tools/gpio-extender/gpioe-server > /dev/null 2>&1 &
+    /root/nems/nems-tools/gpio-extender/gpioe-client > /dev/null 2>&1 &
   fi
 
   if ! grep -q "NEMS0021" $tmpdir/cron.tmp; then
-    printf "\n# Detect NEMS Server local IP on same Subnet and set NEMS Tools config to point to it NEMS0021\n@reboot /root/nems/nems-tools/detect > /dev/null 2>&1\n" >> /tmp/cron.tmp
+    printf "\n# Detect NEMS Server local IP on same Subnet and set NEMS Tools config to point to it NEMS0021\n@reboot /root/nems/nems-tools/detect > /dev/null 2>&1\n" >> $tmpdir/cron.tmp
     cronupdate=1
   fi
 
@@ -62,8 +63,8 @@ fi
     crontab $tmpdir/cron.tmp
   fi
 
-  # Remove temp file
-  rm $tmpdir/cron.tmp
+  # Remove tmp stuff
+  rm -rf $tmpdir
 
 # /Add new cron entries
 
