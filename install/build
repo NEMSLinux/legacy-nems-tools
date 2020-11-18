@@ -76,3 +76,6 @@ fi
 
 # Reload apache2
 systemctl reload apache2
+
+# Remove SSH from the server
+systemctl disable ssh
