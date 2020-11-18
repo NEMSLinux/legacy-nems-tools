@@ -61,8 +61,9 @@
       }
       foreach ($GPIO->state as $pin=>$state) {
         if ($hardware != 0) shell_exec($gpio_command . ' -g write ' . $pin . ' ' . $state);
-        echo '(Pin ' . $pin . ': ' . $state . ') ';
+        echo 'Pin ' . $pin . ': ' . $state . ' ';
       }
+      echo 'Omzlo Light: ' . $GPIO->omzlo;
       shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $GPIO->omzlo . ' > /dev/null 2>&1');
       echo PHP_EOL;
     } else {
