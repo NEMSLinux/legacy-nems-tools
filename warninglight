@@ -326,6 +326,7 @@ function lightOn($thisstatus,$delay=100000) {
   }
   // Only pass specific data (Keep the transmission small)
   $pass = new stdClass();
+  $pass->nems = true;
   $pass->state = $GPIO->state;
   $pass->omzlo = $GPIO->omzlo;
   file_put_contents('/var/log/nems/nems-tools/gpio-extender.json',json_encode($pass));

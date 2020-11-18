@@ -14,7 +14,7 @@ fi
 echo $$ > /var/run/nems-gpioe-server.pid
 
 # Turn on all lights while server is starting
-echo '{"24":1,"23":1,"18":1}' > /var/log/nems/nems-tools/gpio-extender.json
+echo '{"nems":true,"state":{"24":1,"23":1,"18":1},"omzlo":"green2 orange1 red1"}' > /var/log/nems/nems-tools/gpio-extender.json
 
 # Install socat if not already installed
 if [[ ! `which socat` ]]; then

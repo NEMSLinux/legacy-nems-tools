@@ -14,8 +14,8 @@ if [[ ! -e /etc/nems/nems-tools.conf ]]; then
   echo "Found $found active IP addresses on subnet."
   echo "Checking if any are a NEMS Server."
   for ip in $ips; do
-    response=$(curl -m 3 -s "http://$ip/nems-api/hosts")
-    detect=$(echo $response | jq -rMc '.success' 2>&1)
+    response=$(curl -m 3 -s "http://$ip:9595")
+    detect=$(echo $response | jq -rMc '.nems' 2>&1)
     shopt -s nocasematch
     case "$detect" in
      "true" ) echo "nemsserver=$ip" >> /etc/nems/nems-tools.conf; echo "Detected NEMS Server at $ip"; foundnems=$((foundnems+1));
