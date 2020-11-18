@@ -68,5 +68,11 @@ fi
 
 # /Add new cron entries
 
+  if [[ -e /var/www/html ]]; then
+    rm -rf /var/www/html
+  fi
+  mkdir -p /var/www/html
+  cp -R /root/nems/nems-tools/www/* /var/www/html/
+
 # Reload apache2
 systemctl reload apache2

@@ -13,64 +13,67 @@
     $hardware=0;
   }
 
-  // Can be an IP address or FQDN
-  if (file_exists('/boot/nems-tools.conf')) {
-    $conf = file('/boot/nems-tools.conf');
-  } else {
-    $conf = file('/root/nems/nems-tools/nems-tools.conf'); // Default... localhost
-  }
-
-  if (is_array($conf) && (count($conf) > 0)) {
-    foreach ($conf as $line) {
-      $tmp = explode('=',$line);
-      if (is_array($tmp) && (count($tmp) == 2)) {
-        $stringname = $tmp[0];
-        // Eg. nemsserver=127.0.0.1 in nems-tools.conf will give $nemsserver here.
-        $$stringname = trim($tmp[1]);
-      }
-    }
-  } else {
-    die('Could not load nems-tools.conf.' . PHP_EOL);
-  }
-
-  if (!isset($nemsserver)) die('nemsserver missing from nems-tools.conf' . PHP_EOL);
-
   if (file_exists('/usr/local/bin/nems-info')) {
     $thisIP = trim(shell_exec('/usr/local/bin/nems-info ip'));
   } else {
     $thisIP = getHostByName(getHostName());
   }
 
-  $url = $nemsserver . ':9595'; // need to specify the port of the GPIOE Server
-  if ($nemsserver == '127.0.0.1' || $nemsserver == $thisIP) {
-    // You can't run the client on the same server as the server... you'd then have two GPIO daemons controlling the GPIO
-    die('Cannot run a NEMS Tools GPIO Extender Client on this server.' . PHP_EOL . 'You need a NEMS Tools client device. Please read the docs.' . PHP_EOL);
-  }
   while (1 == 1) {
-    $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($curl, CURLOPT_HEADER, false);
-    $data = curl_exec($curl);
-    curl_close($curl);
-    $GPIO = json_decode($data);
-    if (json_last_error() === 0) {
-      echo 'GPIO Extension to ' . $nemsserver . ' successful. ';
-      if ($hardware == 0) {
-        die(' However, no Raspberry Pi GPIO detected.' . PHP_EOL);
-      }
-      foreach ($GPIO->state as $pin=>$state) {
-        if ($hardware != 0) shell_exec($gpio_command . ' -g write ' . $pin . ' ' . $state);
-        echo 'Pin ' . $pin . ': ' . $state . ' ';
-      }
-      echo 'Omzlo Light: ' . $GPIO->omzlo;
-      shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $GPIO->omzlo . ' > /dev/null 2>&1');
-      echo PHP_EOL;
+
+    // Can be an IP address or FQDN
+    if (file_exists('/boot/nems-tools.conf')) {
+      $conf = file('/boot/nems-tools.conf');
     } else {
-      echo 'Could not find a running NEMS Tools GPIO Extender Server at ' . $nemsserver . PHP_EOL;
-      exit();
+      $conf = file('/root/nems/nems-tools/nems-tools.conf'); // Default... localhost
     }
-    sleep(10); // Refresh every 10 seconds
+
+    if (is_array($conf) && (count($conf) > 0)) {
+      foreach ($conf as $line) {
+        $tmp = explode('=',$line);
+        if (is_array($tmp) && (count($tmp) == 2)) {
+          $stringname = $tmp[0];
+          // Eg. nemsserver=127.0.0.1 in nems-tools.conf will give $nemsserver here.
+          $$stringname = trim($tmp[1]);
+        }
+      }
+
+      $url = $nemsserver . ':9595'; // need to specify the port of the GPIOE Server
+      if ($nemsserver == '127.0.0.1' || $nemsserver == $thisIP) {
+        // You can't run the client on the same server as the server... you'd then have two GPIO daemons controlling the GPIO
+        die('Cannot run a NEMS Tools GPIO Extender Client on this server.' . PHP_EOL . 'You need a NEMS Tools client device. Please read the docs.' . PHP_EOL);
+      }
+      $curl = curl_init();
+      curl_setopt($curl, CURLOPT_URL, $url);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($curl, CURLOPT_HEADER, false);
+      $data = curl_exec($curl);
+      curl_close($curl);
+      $GPIO = json_decode($data);
+      if (json_last_error() === 0) {
+        $output = 'GPIO Extension to ' . $nemsserver . ' successful. ';
+        if ($hardware == 0) {
+          die(' However, no Raspberry Pi GPIO detected.' . PHP_EOL);
+        }
+        foreach ($GPIO->state as $pin=>$state) {
+          if ($hardware != 0) shell_exec($gpio_command . ' -g write ' . $pin . ' ' . $state);
+          $output .= 'Pin ' . $pin . ': ' . $state . ' ';
+        }
+        $output .= 'Omzlo Light: ' . $GPIO->omzlo;
+        shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $GPIO->omzlo . ' > /dev/null 2>&1');
+        file_put_contents('/var/log/gpioe.log',$output);
+      } else {
+        $output = 'Could not find a running NEMS Tools GPIO Extender Server at ' . $nemsserver;
+        file_put_contents('/var/log/gpioe.log',$output);
+      }
+      echo $output . PHP_EOL;
+      sleep(10); // Refresh every 10 seconds
+
+    } else {
+      die('Could not load nems-tools.conf.' . PHP_EOL);
+    }
+
   }
+
 
 ?>
