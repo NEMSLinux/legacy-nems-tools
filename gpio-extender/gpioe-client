@@ -67,6 +67,10 @@
         file_put_contents('/var/log/gpioe.log',$output);
       } else {
         $output = 'Could not find a running NEMS Tools GPIO Extender Server at ' . $nemsserver;
+        shell_exec($gpio_command . ' -g write 18 1');
+        shell_exec($gpio_command . ' -g write 23 1');
+        shell_exec($gpio_command . ' -g write 24 1');
+        shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts green1 orange1 red1 > /dev/null 2>&1');
         file_put_contents('/var/log/gpioe.log',$output);
       }
       echo $output . PHP_EOL;
