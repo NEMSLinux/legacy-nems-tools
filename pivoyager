@@ -101,7 +101,7 @@ if (( $platform < '10' )); then
   pivoyager=$(/usr/local/bin/pivoyager status 2>&1)
   # RESET the state upon run, in case user removed PiVoyager on last boot
   echo 0 > /var/log/nems/pivoyager
-  if [[ $pivoyager == *"ERR"* ]]; then
+  if [[ $pivoyager == *"ERR"* ]] || [[ $pivoyager == *"failed"* ]]; then
     echo "No PiVoyager board detected. Get yours at https://cat5.tv/pivoyager"
     exit
   fi
