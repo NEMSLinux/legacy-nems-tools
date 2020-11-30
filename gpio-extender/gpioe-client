@@ -62,7 +62,8 @@
           if ($hardware != 0) shell_exec($gpio_command . ' -g write ' . $pin . ' ' . $state);
           $output .= 'Pin ' . $pin . ': ' . $state . ' ';
         }
-        $output .= 'Omzlo Light: ' . $GPIO->omzlo;
+        $output .= 'Omzlo Light: ' . $GPIO->omzlo . ' ';
+        $output .= 'Iteration: ' . $GPIO->iteration;
         shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $GPIO->omzlo . ' > /dev/null 2>&1');
         file_put_contents('/var/log/gpioe.log',$output);
       } else {
