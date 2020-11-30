@@ -1,6 +1,8 @@
 #!/usr/local/bin/php
 <?php
 $v=0;
+$iteration=0;
+$omzlopresent=3;
 $pid=getmypid();
 $user=trim(shell_exec('whoami'));
 if ($user != 'root') die('Access denied: Must be root.' . PHP_EOL);
@@ -122,7 +124,9 @@ while (1 == 1) {
 # Tell the watchdog to power off the NEMS Server if it hasn't received a heartbeat for 2 minutes
 # This activates and resets the i2C watchdog every iteration of the loop
 if ($platform >= 0 && $platform <= 9) {
-  shell_exec('/root/nems/nems-tools/omzlo-warninglights watchdog 120');
+  if ($omzlopresent == 1) {
+    shell_exec('/root/nems/nems-tools/omzlo-warninglights watchdog 120');
+  }
 }
 
 $issues = array(); // reset at each iteration
@@ -312,7 +316,7 @@ function setstate($state) {
 }
 
 function lightOn($thisstatus,$delay=100000) {
-  global $GPIO,$hardware;
+  global $GPIO,$hardware,$iteration;
   $chosenpin = '';
   foreach ($GPIO->pins as $status=>$pin) {
     if ($status == $thisstatus || $thisstatus == 'all') {
@@ -327,6 +331,7 @@ function lightOn($thisstatus,$delay=100000) {
   // Only pass specific data (Keep the transmission small)
   $pass = new stdClass();
   $pass->nems = true;
+  $pass->iteration = $iteration++;
   $pass->state = $GPIO->state;
   $pass->omzlo = $GPIO->omzlo;
   file_put_contents('/var/log/nems/nems-tools/gpio-extender.json',json_encode($pass));
@@ -335,10 +340,23 @@ function lightOn($thisstatus,$delay=100000) {
 
 // If an Omzlo Warninglights pHAT is available, trigger the appropriate lights
 function omzlo($alerts) {
-  global $GPIO, $platform;
+  global $GPIO, $platform, $omzlopresent;
   $GPIO->omzlo = $alerts; // We'll still set the omzlo alerts since we might be passing it via GPIO Extender
   if ($platform >= 0 && $platform <= 9) { // just don't run it if not a Pi host
-    shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $alerts);
+    if ($omzlopresent == 3) {
+      echo '[' . date('Y-m-d g:i:sa') . '] Checking to see if an Omzlo Warning Light pHAT is present on this NEMS Server... ';
+      $test = shell_exec('/root/nems/nems-tools/omzlo-warninglights status 2>&1');
+      if (stristr($test,'failed')) {
+        $omzlopresent = 0;
+        echo 'No.' . PHP_EOL;
+      } else {
+        $omzlopresent = 1;
+        echo 'Yes.' . PHP_EOL;
+      }
+    }
+    if ($omzlopresent == 1) {
+      shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $alerts);
+    }
   }
 }
 
