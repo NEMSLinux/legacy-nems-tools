@@ -63,7 +63,7 @@
           $output .= 'Pin ' . $pin . ': ' . $state . ' ';
         }
         $output .= 'Omzlo Light: ' . $GPIO->omzlo . ' ';
-        $output .= 'Iteration: ' . $GPIO->iteration;
+        $output .= 'Iteration: ' . number_format($GPIO->iteration);
         shell_exec('/root/nems/nems-tools/omzlo-warninglights alerts ' . $GPIO->omzlo . ' > /dev/null 2>&1');
         file_put_contents('/var/log/gpioe.log',$output);
       } else {
