@@ -84,6 +84,15 @@ fi
 
 exit 0' > /etc/rc.local
 
+# Change hostname
+
+hn=$(/bin/hostname)
+if [[ $hn != "nems-gpioe" ]]; then
+  /bin/sed -i -- 's/'"$hn"'/nems-gpioe/g' /etc/hosts
+  /bin/sed -i -- 's/'"$hn"'/nems-gpioe/g' /etc/hostname
+  hostnamectl set-hostname nems-gpioe
+fi
+
 # Reload apache2
 systemctl reload apache2
 
