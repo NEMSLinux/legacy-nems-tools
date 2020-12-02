@@ -19,6 +19,8 @@
     $thisIP = getHostByName(getHostName());
   }
 
+  file_put_contents('/var/log/gpioe.log',array());
+
   while (1 == 1) {
 
     # Detect local NEMS Server
@@ -27,8 +29,6 @@
     // Can be an IP address or FQDN
     if (file_exists('/boot/nems-tools.conf')) {
       $conf = file('/boot/nems-tools.conf');
-    } else {
-      $conf = file('/root/nems/nems-tools/nems-tools.conf'); // Default... localhost
     }
 
     if (is_array($conf) && (count($conf) > 0)) {
@@ -42,10 +42,6 @@
       }
 
       $url = $nemsserver . ':9595'; // need to specify the port of the GPIOE Server
-      if ($nemsserver == '127.0.0.1' || $nemsserver == $thisIP) {
-        // You can't run the client on the same server as the server... you'd then have two GPIO daemons controlling the GPIO
-        die('Cannot run a NEMS Tools GPIO Extender Client on this server.' . PHP_EOL . 'You need a NEMS Tools client device. Please read the docs.' . PHP_EOL);
-      }
       $curl = curl_init();
       curl_setopt($curl, CURLOPT_URL, $url);
       curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -78,9 +74,8 @@
       sleep(10); // Refresh every 10 seconds
 
     } else {
-      $error = 'Could not connect to any NEMS Server.';
+      $error = 'Attempting to find a NEMS Server...';
       file_put_contents('/var/log/gpioe.log',json_encode($error));
-      //die('Could not load nems-tools.conf.' . PHP_EOL);
     }
 
   }
