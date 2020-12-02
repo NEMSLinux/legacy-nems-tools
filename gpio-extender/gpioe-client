@@ -78,7 +78,9 @@
       sleep(10); // Refresh every 10 seconds
 
     } else {
-      die('Could not load nems-tools.conf.' . PHP_EOL);
+      $error = 'Could not connect to any NEMS Server.';
+      file_put_contents('/var/log/gpioe.log',json_encode($error));
+      //die('Could not load nems-tools.conf.' . PHP_EOL);
     }
 
   }

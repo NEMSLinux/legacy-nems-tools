@@ -18,13 +18,13 @@ if [[ ! -e /boot/nems-tools.conf ]] && [[ ! -e /tmp/cleaning ]]; then
   foundnems=0
   subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}')
   echo "Loading servers on $subnet."
-  ips=$(nmap -n -sn $subnet -oG - | awk '/Up$/{print $2}')
+  ips=$(/usr/bin/nmap -n -sn $subnet -oG - | awk '/Up$/{print $2}')
   found=$(echo "$ips" | wc -l)
   echo "Found $found active IP addresses on subnet."
   echo "Checking if any are a NEMS Server."
   for ip in $ips; do
-    response=$(curl -m 3 -s "http://$ip:9595")
-    detect=$(echo $response | jq -rMc '.nems' 2>&1)
+    response=$(/usr/bin/curl -m 3 -s "http://$ip:9595")
+    detect=$(echo $response | /usr/bin/jq -rMc '.nems' 2>&1)
     shopt -s nocasematch
     case "$detect" in
      "true" ) echo "nemsserver=$ip" >> /boot/nems-tools.conf; echo "Detected NEMS Server at $ip"; foundnems=$((foundnems+1));
