@@ -74,6 +74,16 @@ fi
   mkdir -p /var/www/html
   cp -R /root/nems/nems-tools/www/* /var/www/html/
 
+# Overwrite the rc.local with default
+  echo '#!/bin/sh -e
+# Print the IP address
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+  printf "My IP address is %s\n" "$_IP"
+fi
+
+exit 0' > /etc/rc.local
+
 # Reload apache2
 systemctl reload apache2
 
