@@ -22,7 +22,7 @@
   while (1 == 1) {
 
     # Detect local NEMS Server
-    shell_exec('/root/nems/nems-tools/detect');
+    echo shell_exec('/root/nems/nems-tools/detect');
 
     // Can be an IP address or FQDN
     if (file_exists('/boot/nems-tools.conf')) {

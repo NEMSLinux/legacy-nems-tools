@@ -3,13 +3,13 @@
 # Detect a NEMS Server on this subnet and add config file for NEMS Tools
 
 # Depends: nmap jq
-if [ $(dpkg-query -W -f='${Status}' nmap 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ $(/usr/bin/dpkg-query -W -f='${Status}' nmap 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
   echo "Installing dependency: nmap"
-  apt-get -y install nmap
+  /usr/bin/apt-get -y install nmap
 fi
-if [ $(dpkg-query -W -f='${Status}' jq 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ $(/usr/bin/dpkg-query -W -f='${Status}' jq 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
   echo "Installing dependency: jq"
-  apt-get -y install jq
+  /usr/bin/apt-get -y install jq
 fi
 
 echo "NEMS Tools NEMS Server Detector"
