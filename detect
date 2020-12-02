@@ -14,7 +14,7 @@ fi
 
 echo "NEMS Tools NEMS Server Detector"
 
-if [[ ! -e /boot/nems-tools.conf ]]; then
+if [[ ! -e /boot/nems-tools.conf ]] && [[ ! -e /tmp/cleaning ]]; then
   foundnems=0
   subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}')
   echo "Loading servers on $subnet."

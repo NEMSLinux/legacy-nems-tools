@@ -1,0 +1,122 @@
+#!/bin/bash
+# Just a simple cleanup script so we don't leave
+# a bunch of history behind at build-time
+# THIS IS NOT AN END-USER SCRIPT
+# Running this will DESTROY all your NEMS configuration and reset to factory defaults
+
+if [[ $EUID -ne 0 ]]; then
+  echo "ERROR: This script must be run as root" 2>&1
+  exit 1
+else
+
+  echo "Cleaning up nems-tools Extender OS"
+  echo ""
+  read -r -p "What build number is this? " buildnum
+
+  touch /tmp/cleaning
+
+  # Delete system email
+  rm /var/spool/mail/*
+
+  # Remove nems-tools configuration file
+  if [[ -e /boot/nems-tools.conf ]]; then
+    rm /boot/nems-tools.conf
+  fi
+
+  # Remove nano search history and such
+  rm -rf /root/.nano
+  rm -rf /home/nemsadmin/.nano
+
+  sudo apt-get clean
+  sudo apt-get autoclean
+  apt-get autoremove
+
+  #echo "Don't forget to remove the old kernels:"
+  #dpkg --get-selections | grep linux-image
+  echo "Removing old kernels..."
+  apt-get remove --purge -y $(dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d')
+
+  # Empty old logs
+  find /var/log/ -type f -not -path "/var/log/nems/*" -exec cp /dev/null {} \;
+  find /var/log/ -iname "*.gz" -type f -delete
+  find /var/log/ -iname "*.log.*" -type f -delete
+  rm /var/log/nagios/archives/*.log
+  cat /dev/null > /var/log/wtmp
+  cat /dev/null > /var/log/btmp
+
+  # Clear system mail
+  find /var/mail/ -type f -exec cp /dev/null {} \;
+
+  cd /root
+  rm .nano_history
+  history -c
+  history -w
+  rm .bash_history
+
+  cd /home/pi
+  rm .nano_history
+  su - pi -c "history -c"
+  su - pi -c "history -w"
+  rm .bash_history
+
+  rm /var/log/lastlog
+  touch /var/log/lastlog
+
+  # Remove Robbie's key pair
+  rm /home/pi/.ssh/authorized_keys
+
+  # Remove DNS Resolver config (will be auto-generated on first boot)
+  echo "# Default resolv.conf file created by NEMS Admin
+
+# Cloudflare
+nameserver 1.1.1.1
+nameserver 1.0.0.1
+nameserver 2606:4700:4700::1111
+nameserver 2606:4700:4700::1001
+
+# Google
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+nameserver 2001:4860:4860::8888
+nameserver 2001:4860:4860::8844
+" > /etc/resolv.conf
+
+  # Remove resize from patches.log
+  # This will be put back in below for non-applicable platforms such as virtual appliance
+  /bin/sed -i~ '/PATCH-000002/d' /var/log/nems/patches.log
+
+
+  # Move patches.log so it can persist after clear
+  mv /var/log/nems/patches.log /tmp
+  find /var/log/nems/ -name "*" -type f -delete
+  if [[ ! -d /var/log/nems ]]; then
+    mkdir /var/log/nems
+  fi
+  if [[ ! -d /var/log/nems/nems-tools ]]; then
+    mkdir /var/log/nems/nems-tools
+  fi
+  # Restore patches.log so patches don't get reinstalled on new img
+  mv /tmp/patches.log /var/log/nems/
+  echo $buildnum > /var/log/nems/build
+
+  # Make it so filesystem resizes at first boot
+    # Raspberry Pi
+     addition="/root/nems/nems-admin/resize_rootfs/raspi\n"
+     if grep -q "exit" /etc/rc.local; then
+       # This file contains an exit command, so make sure our new command comes before it
+       /bin/sed -i -- 's,exit,'"$addition"'exit,g' /etc/rc.local
+     else
+       # No exit command within the file, so just add it
+       echo "PLACEHERE" >> /etc/rc.local
+       /bin/sed -i -- 's,PLACEHERE,'"$addition"'exit 0,g' /etc/rc.local
+     fi
+
+  # remove any package data left behind after removal
+  apt-get purge $(dpkg -l | awk '/^rc/ { print $2 }')
+
+  sync
+
+  halt
+  exit
+
+fi
