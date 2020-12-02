@@ -2,7 +2,7 @@
 
 /usr/bin/raspi-config --expand-rootfs > /dev/null 2>&1
 
-/bin/sed -i~ '/\/root\/nems\/nems-tools\/gpio-extender\/raspi/d' /etc/rc.local
+/bin/sed -i~ '/\/root\/nems\/nems-tools\/gpio-extender\/raspi-resize/d' /etc/rc.local
 
 # Log that patch (resize) has been applied to this system
 # Activates features such as bootscreen.sh
