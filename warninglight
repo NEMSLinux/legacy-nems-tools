@@ -199,24 +199,21 @@ function setstate($state) {
   $previousissues = $currentissues;
   $currentissues = '';
 
-  // Activate appropriate light
-    lightOn($state);
-    omzlo('green1');
-
   // only update status if state has changed
     switch ($state) {
 
       case 'ok': // Green light.
+	omzlo('green3');
         if ($currentstate != $previousstate) $currentissueshead = 'NEMS State: OK.' . PHP_EOL;
         $fieldsarray[] = array(
           'name' => 'Everything is okay',
           'value' => 'No known issues',
           'inline' => false
         );
-	omzlo('green3');
       break;
 
       case 'unknown': // Turn on orange light.
+        omzlo('green3 orange1');
         if ($currentstate != $previousstate) {
           $currentissueshead = 'NEMS State: UNKNOWN.' . PHP_EOL;
         } else {
@@ -230,10 +227,12 @@ function setstate($state) {
             'inline' => true
           );
         }
-        omzlo('green3 orange1');
       break;
 
       case 'warning': // Turn on orange, flash or pulse red.
+//        omzlo('orange2 buzzer2');
+//        sleep(2);
+        omzlo('orange3'); // Would like to use orange2 but currently a bug in that code
         if ($currentstate != $previousstate) {
           $currentissueshead = 'NEMS State: WARNING.' . PHP_EOL;
         } else {
@@ -258,12 +257,12 @@ function setstate($state) {
             );
           }
         }
-//        omzlo('red2 buzzer2');
-//        sleep(2);
-        omzlo('red2');
       break;
 
       case 'critical': // Red solid light, siren for 3 seconds every 15 minutes.
+//        omzlo('red2 buzzer3');
+//        sleep(3);
+        omzlo('red3');
         if ($currentstate != $previousstate) {
           $currentissueshead = 'NEMS State: CRITICAL.' . PHP_EOL;
         } else {
@@ -300,9 +299,6 @@ function setstate($state) {
             }
           }      
         }
-//        omzlo('red2 buzzer3');
-//        sleep(3);
-        omzlo('red3');
       break;
 
     }
@@ -313,6 +309,10 @@ function setstate($state) {
       include('/root/nems/nems-tools/webhook');
     }
   
+  // Activate appropriate light
+    lightOn($state);
+    omzlo('green1');
+
 }
 
 function lightOn($thisstatus,$delay=100000) {
