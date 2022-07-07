@@ -5,7 +5,7 @@
 # Since nems-tools still pulls the legacy version even with the broken nems-update, and since gpioe-server loads at boot,
 # by injecting this code here, the user's NEMS Server will self-repair at next reboot.
 # 2022-07-07
-if ! grep -q "apt-get install -y nems-migrator" /usr/local/share/nems/nems-scripts/update.sh; then
+if grep -q "apt-get install -y nems-migrator" /usr/local/share/nems/nems-scripts/update.sh; then
   cd /usr/local/share/nems/nems-scripts/
   git pull
 fi
