@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# A patch injected into legacy (1.5.x) to fix nems-scripts due to roll to apt repository in 1.6 breaking nems-update in legacy versions
+# This patch fixes the issue by pulling the legacy nems-scripts, allowing all products to update (esp. nems-migrator).
+# Since nems-tools still pulls the legacy version even with the broken nems-update, and since gpioe-server loads at boot,
+# by injecting this code here, the user's NEMS Server will self-repair at next reboot.
+# 2022-07-07
+if ! grep -q "apt-get install -y nems-migrator" /usr/local/share/nems/nems-scripts/update.sh; then
+  cd /usr/local/share/nems/nems-scripts/
+  git pull
+fi
+
 # Check if a PID exists. If yes, check if it is running and abort if yes.
 if [[ -e /var/run/nems-gpioe-server.pid ]]; then
   running=$(cat /var/run/nems-gpioe-server.pid)
